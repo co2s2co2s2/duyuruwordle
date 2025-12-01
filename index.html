@@ -1,174 +1,342 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Duyuru Wordle</title>
-</head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DUYURU WORDLE</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fafafa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      flex-direction: column;
+    }
 
+    .board {
+      display: grid;
+      grid-template-rows: repeat(6, 1fr);
+      gap: 10px;
+      justify-items: center;
+      width: 100%;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(5, 60px);
+      gap: 10px;
+    }
+
+    .cell {
+      width: 60px;
+      height: 60px;
+      border: 2px solid #ccc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 32px;
+      font-weight: bold;
+      text-transform: uppercase;
+      background: white;
+    }
+
+    .correct { background: #6aaa64; color: white; }
+    .present { background: #c9b458; color: white; }
+    .absent { background: #787c7e; color: white; }
+
+    .keyboard {
+      margin-top: 20px;
+      text-align: center;
+      width: 100%;
+      max-width: 480px;
+      padding: 0 10px;
+      box-sizing: border-box;
+    }
+
+    .keyboard div {
+      display: flex;
+      flex-wrap: nowrap;
+      justify-content: center;
+      margin-bottom: 5px;
+    }
+
+    .key {
+      padding: 10px 0;
+      margin: 2px;
+      min-width: 32px;
+      flex: 1 1 auto;
+      max-width: 48px;
+      text-align: center;
+      font-weight: bold;
+      border-radius: 4px;
+      border: none;
+      background: #ddd;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    /* Modal styling */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background-color: #fefefe;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+    }
+
+    #copyButton {
+      margin-top: 15px;
+      padding: 8px 16px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      background-color: #6aaa64;
+      color: white;
+      border-radius: 4px;
+    }
+
+    @media (max-width: 400px) {
+      .row { gap: 5px; }
+      .key { font-size: 14px; min-width: 28px; max-width: 36px; }
+      #copyButton { font-size: 14px; }
+    }
+  </style>
+</head>
 <body>
 
-<h1>DUYURU WORDLE</h1>
+  <div>
+    <h1>DUYURU WORDLE</h1>
+    <div class="board" id="board"></div>
+    <div class="keyboard" id="keyboard"></div>
+  </div>
 
-<div id="grid" class="grid"></div>
-<div id="keyboard" class="keyboard"></div>
+  <!-- Modal -->
+  <div id="resultModal" class="modal">
+    <div class="modal-content" id="modalContent">
+      <div id="modalMessage" style="font-weight:bold;margin-bottom:10px;">TEBRİKLER BİLDİN</div>
+      <pre id="modalEmojis" style="white-space: pre-wrap; font-size: 18px; text-align:center;"></pre>
+      <button id="copyButton">Kopyala</button>
+    </div>
+  </div>
 
-<script>
-// -----------------------------
-// ÇALIŞAN SON KOD
-// -----------------------------
+  <script>
+    let WORD_LIST = [];
+    let WORD = null;
+    let currentRow = 0;
+    let currentCol = 0;
+    let guesses = [];
 
-const TURKISH_WORDS = ["elma","armut","muz","çilek","üzüm"]; // Örnek sözlük
-let DAILY_WORD = "";
-let currentAttempt = "";
-let currentRow = 0;
-let gameEnded = false;
+    function normalizeTurkish(str) {
+      return str
+        .replace(/i/g, 'İ')
+        .replace(/ı/g, 'I')
+        .replace(/ş/g, 'Ş')
+        .replace(/ç/g, 'Ç')
+        .replace(/ü/g, 'Ü')
+        .replace(/ö/g, 'Ö')
+        .replace(/ğ/g, 'Ğ')
+        .toUpperCase();
+    }
 
-function selectDailyWord() {
-    const now = new Date();
-    const turkishDate = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Istanbul" }));
-    const dayIndex =
-        turkishDate.getFullYear() * 10000 +
-        (turkishDate.getMonth() + 1) * 100 +
-        turkishDate.getDate();
+    fetch("words.json")
+      .then(res => res.json())
+      .then(list => {
+        WORD_LIST = list.map(k => normalizeTurkish(k.trim()));
+        WORD = getDailyWord();
+        checkIfPlayed();
+      })
+      .catch(err => console.error("Kelime listesi yüklenemedi:", err));
 
-    const index = dayIndex % TURKISH_WORDS.length;
-    DAILY_WORD = TURKISH_WORDS[index].toUpperCase();
-}
-
-function createGrid() {
-    const grid = document.getElementById("grid");
-    grid.innerHTML = "";
-    grid.style.display = "grid";
-    grid.style.gridTemplateColumns = "repeat(5, 60px)";
-    grid.style.gridGap = "8px";
-    grid.style.marginBottom = "20px";
-
-    for (let i = 0; i < 30; i++) {
+    const board = document.getElementById("board");
+    for (let r = 0; r < 6; r++) {
+      const row = document.createElement("div");
+      row.classList.add("row");
+      for (let c = 0; c < 5; c++) {
         const cell = document.createElement("div");
-        cell.style.width = "60px";
-        cell.style.height = "60px";
-        cell.style.border = "2px solid #ccc";
-        cell.style.display = "flex";
-        cell.style.alignItems = "center";
-        cell.style.justifyContent = "center";
-        cell.style.fontSize = "28px";
-        cell.style.fontWeight = "bold";
-        cell.style.textTransform = "uppercase";
-        cell.style.backgroundColor = "white";
-        cell.style.borderRadius = "6px";
-        grid.appendChild(cell);
+        cell.classList.add("cell");
+        cell.id = `cell-${r}-${c}`;
+        row.appendChild(cell);
+      }
+      board.appendChild(row);
     }
-}
 
-function createKeyboard() {
-    const rows = ["ERTYUIOPĞÜ", "ASDFGHJKLŞİ", "⌫ZXCVBNMÖÇ↵"];
+    const keys = [
+      ["Q","W","E","R","T","Y","U","I","O","P","Ğ","Ü"],
+      ["A","S","D","F","G","H","J","K","L","Ş","İ"],
+      ["ENTER","Z","X","C","V","B","N","M","Ö","Ç","DEL"]
+    ];
+
     const keyboard = document.getElementById("keyboard");
-    keyboard.innerHTML = "";
-    keyboard.style.display = "flex";
-    keyboard.style.flexDirection = "column";
-    keyboard.style.alignItems = "center";
-    keyboard.style.marginTop = "10px";
-
-    rows.forEach(row => {
-        const rowDiv = document.createElement("div");
-        rowDiv.style.display = "flex";
-        rowDiv.style.justifyContent = "center";
-        rowDiv.style.marginBottom = "6px";
-
-        row.split("").forEach(keyChar => {
-            const key = document.createElement("button");
-            key.textContent = keyChar;
-            key.style.margin = "3px";
-            key.style.minWidth = "32px";
-            key.style.padding = "12px 10px";
-            key.style.borderRadius = "6px";
-            key.style.border = "none";
-            key.style.backgroundColor = "#ddd";
-            key.style.fontSize = "18px";
-            key.style.cursor = "pointer";
-
-            key.onclick = () => handleKeyPress(keyChar);
-
-            rowDiv.appendChild(key);
-        });
-
-        keyboard.appendChild(rowDiv);
+    keys.forEach(rowKeys => {
+      const rowDiv = document.createElement("div");
+      rowKeys.forEach(k => {
+        const btn = document.createElement("button");
+        btn.textContent = k;
+        btn.classList.add("key");
+        btn.onclick = () => handleKey(k);
+        rowDiv.appendChild(btn);
+      });
+      keyboard.appendChild(rowDiv);
     });
-}
 
-function handleKeyPress(key) {
-    if (gameEnded) return;
+    function handleKey(key) {
+      key = normalizeTurkish(key);
+      const validChars = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZX";
 
-    if (key === "⌫") {
-        currentAttempt = currentAttempt.slice(0, -1);
-        updateGrid();
+      if (key === "DEL") return deleteLetter();
+      if (key === "ENTER") return submitRow();
+      if (!validChars.includes(key)) return;
+
+      if (currentCol < 5) {
+        const cell = document.getElementById(`cell-${currentRow}-${currentCol}`);
+        cell.textContent = key;
+        currentCol++;
+      }
+    }
+
+    function deleteLetter() {
+      if (currentCol > 0) {
+        currentCol--;
+        const cell = document.getElementById(`cell-${currentRow}-${currentCol}`);
+        cell.textContent = "";
+      }
+    }
+
+    function isValidWord(guess) {
+      return WORD_LIST.includes(normalizeTurkish(guess));
+    }
+
+    function submitRow() {
+      if (currentCol < 5) return;
+
+      const guess = [];
+      for (let c = 0; c < 5; c++) {
+        const cell = document.getElementById(`cell-${currentRow}-${c}`);
+        guess.push(cell.textContent);
+      }
+
+      const guessWord = guess.join("");
+      if (!isValidWord(guessWord)) {
+        alert("Geçersiz kelime!");
         return;
-    }
+      }
 
-    if (key === "↵") {
-        if (currentAttempt.length === 5) submitAttempt();
+      const result = checkGuess(guessWord);
+      for (let c = 0; c < 5; c++) {
+        const cell = document.getElementById(`cell-${currentRow}-${c}`);
+        cell.classList.add(result[c]);
+      }
+
+      guesses.push({ guess: guessWord, result });
+
+      if (result.every(r => r === "correct") || currentRow === 5) {
+        saveResult();
+        showShareableResult();
         return;
+      }
+
+      currentRow++;
+      currentCol = 0;
     }
 
-    if (currentAttempt.length < 5) {
-        currentAttempt += key;
-        updateGrid();
-    }
-}
+    function checkGuess(guess) {
+      const res = Array(5).fill("absent");
+      const target = WORD.split("");
+      guess = normalizeTurkish(guess).split("");
 
-function updateGrid() {
-    const grid = document.querySelectorAll("#grid div");
-    for (let i = 0; i < 5; i++) {
-        const cell = grid[currentRow * 5 + i];
-        cell.textContent = currentAttempt[i] || "";
-    }
-}
-
-function submitAttempt() {
-    const grid = document.querySelectorAll("#grid div");
-
-    if (!TURKISH_WORDS.includes(currentAttempt.toLowerCase())) {
-        alert("Bu kelime listede yok!");
-        return;
-    }
-
-    for (let i = 0; i < 5; i++) {
-        const cell = grid[currentRow * 5 + i];
-        const letter = currentAttempt[i];
-
-        if (letter === DAILY_WORD[i]) {
-            cell.style.backgroundColor = "#6aaa64"; // doğru
-            cell.style.color = "white";
-        } else if (DAILY_WORD.includes(letter)) {
-            cell.style.backgroundColor = "#c9b458"; // yanlış yerde
-            cell.style.color = "white";
-        } else {
-            cell.style.backgroundColor = "#787c7e"; // yok
-            cell.style.color = "white";
+      for (let i = 0; i < 5; i++) {
+        if (guess[i] === target[i]) {
+          res[i] = "correct";
+          target[i] = null;
         }
+      }
+
+      for (let i = 0; i < 5; i++) {
+        if (res[i] !== "correct" && target.includes(guess[i])) {
+          res[i] = "present";
+          target[target.indexOf(guess[i])] = null;
+        }
+      }
+
+      return res;
     }
 
-    if (currentAttempt === DAILY_WORD) {
-        alert("Tebrikler! Doğru bildiniz.");
-        gameEnded = true;
-        return;
+    function showShareableResult() {
+      const modal = document.getElementById("resultModal");
+      const modalEmojis = document.getElementById("modalEmojis");
+      let output = `BUGÜNÜN 5'Lİ DUYURU WORDLE'INI ${guesses.length} TAHMİNDE ÇÖZDÜM.\n\n`;
+      guesses.forEach(t => {
+        let line = "";
+        t.result.forEach(r => {
+          if (r === "correct") line += "🟩";
+          else if (r === "present") line += "🟧";
+          else line += "⬛";
+        });
+        output += line + "\n";
+      });
+      modalEmojis.textContent = output;
+      modal.style.display = "flex";
+
+      const copyBtn = document.getElementById("copyButton");
+      copyBtn.onclick = () => {
+        navigator.clipboard.writeText(output);
+        alert("Sonuç kopyalandı!");
+      };
     }
 
-    currentRow++;
-    currentAttempt = "";
-
-    if (currentRow === 6) {
-        alert("Bilemediniz! Kelime: " + DAILY_WORD);
-        gameEnded = true;
+    function saveResult() {
+      const today = new Date().toISOString().slice(0,10);
+      localStorage.setItem('duyuruWordlePlayed', JSON.stringify({ date: today, result: guesses }));
     }
-}
 
-// Başlat
-selectDailyWord();
-createGrid();
-createKeyboard();
-</script>
+    function checkIfPlayed() {
+      const played = JSON.parse(localStorage.getItem('duyuruWordlePlayed'));
+      const today = new Date().toISOString().slice(0,10);
+      if (played && played.date === today) {
+        guesses = played.result;
+        showShareableResult();
+        return true;
+      }
+      return false;
+    }
 
+    function getDailyWord() {
+      if (!WORD_LIST || WORD_LIST.length === 0) return null;
+      const now = new Date();
+      const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const istTime = new Date(utcTime + (3 * 60 * 60 * 1000));
+      const dateStr = istTime.getFullYear().toString() +
+                      (istTime.getMonth() + 1).toString().padStart(2,'0') +
+                      istTime.getDate().toString().padStart(2,'0');
+      const index = parseInt(dateStr) % WORD_LIST.length;
+      return WORD_LIST[index];
+    }
+
+    // Close modal when clicking outside content
+    window.onclick = function(event) {
+      const modal = document.getElementById("resultModal");
+      if (event.target == modal) {
+        modal.style.display = "none";
+      }
+    }
+  </script>
 </body>
 </html>
