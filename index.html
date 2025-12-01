@@ -1,118 +1,9 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Duyuru Wordle</title>
-
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        margin: 0;
-        padding: 20px;
-        box-sizing: border-box;
-    }
-
-    h1 {
-        margin-bottom: 20px;
-        font-size: 24px;
-        text-align: center;
-    }
-
-    /* ======= GRID (tahmin kutuları) ======= */
-    .grid {
-        display: grid;
-        grid-template-columns: repeat(5, 55px);
-        grid-gap: 8px;
-        margin-bottom: 20px;
-    }
-
-    .cell {
-        width: 55px;
-        height: 55px;
-        border: 2px solid #ccc;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 28px;
-        font-weight: bold;
-        text-transform: uppercase;
-        background-color: white;
-        border-radius: 6px;
-    }
-
-    /* ======= KEYBOARD ======= */
-    .keyboard {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        width: 100%;
-        max-width: 600px;   /* Sağ-sol boşluk */
-        margin-top: 10px;
-        padding: 0 10px;    /* Telefon için sağ-sol boşluk */
-        box-sizing: border-box;
-    }
-
-    .keyboard-row {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 8px;
-        flex-wrap: nowrap;  /* Tuş kaymasını engeller */
-    }
-
-    .key {
-        font-size: 18px;
-        padding: 12px 10px;
-        margin: 3px;
-        min-width: 32px;
-        background-color: #ddd;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        user-select: none;
-    }
-
-    .key.large {
-        min-width: 60px;
-    }
-
-    .key:active {
-        background-color: #bbb;
-    }
-
-    /* ======= MOBILE OPTIMIZATION ======= */
-    @media (max-width: 430px) {
-
-        .grid {
-            grid-template-columns: repeat(5, 48px);
-            grid-gap: 6px;
-        }
-
-        .cell {
-            width: 48px;
-            height: 48px;
-            font-size: 24px;
-        }
-
-        .key {
-            padding: 10px 8px;
-            min-width: 28px;
-            font-size: 16px;
-        }
-
-        .key.large {
-            min-width: 55px;
-        }
-
-        .keyboard {
-            padding-left: 8px;
-            padding-right: 8px;
-        }
-    }
-</style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Duyuru Wordle</title>
 </head>
 
 <body>
@@ -123,29 +14,15 @@
 <div id="keyboard" class="keyboard"></div>
 
 <script>
-/* ===============================
-   SENİN MEVCUT SCRIPT'İN
-   (Ben dokunmadım — aynı şekilde çalışır)
-================================= */
+// -----------------------------
+// ÇALIŞAN SON KOD
+// -----------------------------
 
-const TURKISH_WORDS = []; // kelime listen buraya yükleniyor
-
-let dictionaryLoaded = false;
+const TURKISH_WORDS = ["elma","armut","muz","çilek","üzüm"]; // Örnek sözlük
 let DAILY_WORD = "";
-let attempts = [];
 let currentAttempt = "";
 let currentRow = 0;
 let gameEnded = false;
-
-async function loadDictionary() {
-    const response = await fetch("words.json");
-    const data = await response.json();
-    TURKISH_WORDS.push(...data.words);
-    dictionaryLoaded = true;
-    selectDailyWord();
-    createGrid();
-    createKeyboard();
-}
 
 function selectDailyWord() {
     const now = new Date();
@@ -162,37 +39,54 @@ function selectDailyWord() {
 function createGrid() {
     const grid = document.getElementById("grid");
     grid.innerHTML = "";
+    grid.style.display = "grid";
+    grid.style.gridTemplateColumns = "repeat(5, 60px)";
+    grid.style.gridGap = "8px";
+    grid.style.marginBottom = "20px";
 
-    for (let i = 0; i < 6 * 5; i++) {
+    for (let i = 0; i < 30; i++) {
         const cell = document.createElement("div");
-        cell.classList.add("cell");
+        cell.style.width = "60px";
+        cell.style.height = "60px";
+        cell.style.border = "2px solid #ccc";
+        cell.style.display = "flex";
+        cell.style.alignItems = "center";
+        cell.style.justifyContent = "center";
+        cell.style.fontSize = "28px";
+        cell.style.fontWeight = "bold";
+        cell.style.textTransform = "uppercase";
+        cell.style.backgroundColor = "white";
+        cell.style.borderRadius = "6px";
         grid.appendChild(cell);
     }
 }
 
 function createKeyboard() {
-    const rows = [
-        "ERTYUIOPĞÜ",
-        "ASDFGHJKLŞİ",
-        "⌫ZXCVBNMÖÇ↵"
-    ];
-
+    const rows = ["ERTYUIOPĞÜ", "ASDFGHJKLŞİ", "⌫ZXCVBNMÖÇ↵"];
     const keyboard = document.getElementById("keyboard");
     keyboard.innerHTML = "";
+    keyboard.style.display = "flex";
+    keyboard.style.flexDirection = "column";
+    keyboard.style.alignItems = "center";
+    keyboard.style.marginTop = "10px";
 
     rows.forEach(row => {
         const rowDiv = document.createElement("div");
-        rowDiv.classList.add("keyboard-row");
+        rowDiv.style.display = "flex";
+        rowDiv.style.justifyContent = "center";
+        rowDiv.style.marginBottom = "6px";
 
         row.split("").forEach(keyChar => {
             const key = document.createElement("button");
-            key.classList.add("key");
-
-            if (keyChar === "⌫" || keyChar === "↵") {
-                key.classList.add("large");
-            }
-
             key.textContent = keyChar;
+            key.style.margin = "3px";
+            key.style.minWidth = "32px";
+            key.style.padding = "12px 10px";
+            key.style.borderRadius = "6px";
+            key.style.border = "none";
+            key.style.backgroundColor = "#ddd";
+            key.style.fontSize = "18px";
+            key.style.cursor = "pointer";
 
             key.onclick = () => handleKeyPress(keyChar);
 
@@ -224,8 +118,7 @@ function handleKeyPress(key) {
 }
 
 function updateGrid() {
-    const grid = document.querySelectorAll(".cell");
-
+    const grid = document.querySelectorAll("#grid div");
     for (let i = 0; i < 5; i++) {
         const cell = grid[currentRow * 5 + i];
         cell.textContent = currentAttempt[i] || "";
@@ -233,17 +126,17 @@ function updateGrid() {
 }
 
 function submitAttempt() {
+    const grid = document.querySelectorAll("#grid div");
+
     if (!TURKISH_WORDS.includes(currentAttempt.toLowerCase())) {
         alert("Bu kelime listede yok!");
         return;
     }
 
-    const grid = document.querySelectorAll(".cell");
-
     for (let i = 0; i < 5; i++) {
         const cell = grid[currentRow * 5 + i];
-
         const letter = currentAttempt[i];
+
         if (letter === DAILY_WORD[i]) {
             cell.style.backgroundColor = "#6aaa64"; // doğru
             cell.style.color = "white";
@@ -271,7 +164,10 @@ function submitAttempt() {
     }
 }
 
-loadDictionary();
+// Başlat
+selectDailyWord();
+createGrid();
+createKeyboard();
 </script>
 
 </body>
