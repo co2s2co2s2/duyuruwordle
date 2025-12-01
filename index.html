@@ -78,20 +78,32 @@
       font-size: 16px;
     }
 
-    #shareResultContainer {
-      margin-top: 20px;
-      text-align: center;
+    /* Modal styling */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
     }
 
-    #shareResult {
-      width: 100%;
-      max-width: 480px;
-      font-size: 16px;
-      margin-top: 10px;
+    .modal-content {
+      background-color: #fefefe;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
     }
 
     #copyButton {
-      margin-top: 10px;
+      margin-top: 15px;
       padding: 8px 16px;
       font-size: 16px;
       cursor: pointer;
@@ -104,7 +116,6 @@
     @media (max-width: 400px) {
       .row { gap: 5px; }
       .key { font-size: 14px; min-width: 28px; max-width: 36px; }
-      #shareResult { font-size: 14px; }
       #copyButton { font-size: 14px; }
     }
   </style>
@@ -115,7 +126,15 @@
     <h1>DUYURU WORDLE</h1>
     <div class="board" id="board"></div>
     <div class="keyboard" id="keyboard"></div>
-    <div id="shareResultContainer"></div>
+  </div>
+
+  <!-- Modal -->
+  <div id="resultModal" class="modal">
+    <div class="modal-content" id="modalContent">
+      <div id="modalMessage" style="font-weight:bold;margin-bottom:10px;">TEBRİKLER BİLDİN</div>
+      <pre id="modalEmojis" style="white-space: pre-wrap; font-size: 18px; text-align:center;"></pre>
+      <button id="copyButton">Kopyala</button>
+    </div>
   </div>
 
   <script>
@@ -261,15 +280,8 @@
     }
 
     function showShareableResult() {
-      const container = document.getElementById("shareResultContainer");
-      container.innerHTML = "";
-
-      const title = document.createElement("div");
-      title.textContent = "TEBRİKLER BİLDİN";
-      title.style.fontWeight = "bold";
-      title.style.marginBottom = "10px";
-      container.appendChild(title);
-
+      const modal = document.getElementById("resultModal");
+      const modalEmojis = document.getElementById("modalEmojis");
       let output = `BUGÜNÜN 5'Lİ DUYURU WORDLE'INI ${guesses.length} TAHMİNDE ÇÖZDÜM.\n\n`;
       guesses.forEach(t => {
         let line = "";
@@ -280,24 +292,14 @@
         });
         output += line + "\n";
       });
+      modalEmojis.textContent = output;
+      modal.style.display = "flex";
 
-      const textarea = document.createElement("textarea");
-      textarea.id = "shareResult";
-      textarea.rows = guesses.length + 2;
-      textarea.cols = 30;
-      textarea.value = output;
-      container.appendChild(textarea);
-
-      const copyBtn = document.createElement("button");
-      copyBtn.id = "copyButton";
-      copyBtn.textContent = "Kopyala";
+      const copyBtn = document.getElementById("copyButton");
       copyBtn.onclick = () => {
-        textarea.select();
-        textarea.setSelectionRange(0, 99999);
-        navigator.clipboard.writeText(textarea.value);
+        navigator.clipboard.writeText(output);
         alert("Sonuç kopyalandı!");
       };
-      container.appendChild(copyBtn);
     }
 
     function saveResult() {
@@ -321,13 +323,19 @@
       const now = new Date();
       const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
       const istTime = new Date(utcTime + (3 * 60 * 60 * 1000));
-
       const dateStr = istTime.getFullYear().toString() +
                       (istTime.getMonth() + 1).toString().padStart(2,'0') +
                       istTime.getDate().toString().padStart(2,'0');
-
       const index = parseInt(dateStr) % WORD_LIST.length;
       return WORD_LIST[index];
+    }
+
+    // Close modal when clicking outside content
+    window.onclick = function(event) {
+      const modal = document.getElementById("resultModal");
+      if (event.target == modal) {
+        modal.style.display = "none";
+      }
     }
   </script>
 </body>
