@@ -15,16 +15,21 @@
       margin: 0;
       flex-direction: column;
     }
+
     .board {
       display: grid;
       grid-template-rows: repeat(6, 1fr);
       gap: 10px;
+      justify-items: center; /* tahmin satırlarını ortalar */
+      width: 100%;
     }
+
     .row {
       display: grid;
       grid-template-columns: repeat(5, 60px);
       gap: 10px;
     }
+
     .cell {
       width: 60px;
       height: 60px;
@@ -37,16 +42,27 @@
       text-transform: uppercase;
       background: white;
     }
+
     .correct { background: #6aaa64; color: white; }
     .present { background: #c9b458; color: white; }
     .absent { background: #787c7e; color: white; }
-    .keyboard { margin-top: 20px; text-align: center; width: 100%; max-width: 480px; }
+
+    .keyboard {
+      margin-top: 20px;
+      text-align: center;
+      width: 100%;
+      max-width: 480px;
+      padding: 0 10px; /* sol ve sağ boşluk */
+      box-sizing: border-box;
+    }
+
     .keyboard div {
       display: flex;
       flex-wrap: nowrap;
       justify-content: center;
       margin-bottom: 5px;
     }
+
     .key {
       padding: 10px 0;
       margin: 2px;
@@ -61,7 +77,11 @@
       cursor: pointer;
       font-size: 16px;
     }
+
     @media (max-width: 400px) {
+      .row {
+        gap: 5px;
+      }
       .key {
         font-size: 14px;
         min-width: 28px;
