@@ -78,13 +78,23 @@
     }
 
     const keys = [
-      "Q","W","E","R","T","Y","U","I","O","P",
-      "A","S","D","F","G","H","J","K","L",
-      "ENTER","Z","X","C","V","B","N","M","DEL"
-    ];
+  ["Q","W","E","R","T","Y","U","I","O","P"],
+  ["A","S","D","F","G","H","J","K","L"],
+  ["ENTER","Z","X","C","V","B","N","M","DEL"]
+];
 
     const keyboard = document.getElementById("keyboard");
-    keys.forEach(k => {
+    keys.forEach(rowKeys => {
+      const rowDiv = document.createElement("div");
+      rowKeys.forEach(k => {
+        const btn = document.createElement("button");
+        btn.textContent = k;
+        btn.classList.add("key");
+        btn.onclick = () => handleKey(k);
+        rowDiv.appendChild(btn);
+      });
+      keyboard.appendChild(rowDiv);
+    });(k => {
       const btn = document.createElement("button");
       btn.textContent = k;
       btn.classList.add("key");
@@ -160,3 +170,4 @@
   </script>
 </body>
 </html>
+
