@@ -59,12 +59,22 @@
   </div>
 
   <script>
-    const WORD = "KARMA"; // Geçici olarak sabit; sonra rastgele yapılabilir
+    let WORD_LIST = [];
+    let WORD = null;
     let currentRow = 0;
     let currentCol = 0;
 
-    const board = document.getElementById("board");
+    // JSON sözlüğünü yükle
+    fetch("words.json")
+      .then(res => res.json())
+      .then(list => {
+        WORD_LIST = list.map(k => k.toUpperCase());
+        WORD = getDailyWord();
+        console.log("Bugünün kelimesi:", WORD);
+      })
+      .catch(err => console.error("Kelime listesi yüklenemedi:", err));
 
+    const board = document.getElementById("board");
     for (let r = 0; r < 6; r++) {
       const row = document.createElement("div");
       row.classList.add("row");
@@ -78,10 +88,10 @@
     }
 
     const keys = [
-  ["Q","W","E","R","T","Y","U","I","O","P","Ğ","Ü"],
-  ["A","S","D","F","G","H","J","K","L","Ş","İ"],
-  ["ENTER","Z","X","C","V","B","N","M","Ö","Ç","DEL"]
-];
+      ["Q","W","E","R","T","Y","U","I","O","P","Ğ","Ü"],
+      ["A","S","D","F","G","H","J","K","L","Ş","İ"],
+      ["ENTER","Z","X","C","V","B","N","M","Ö","Ç","DEL"]
+    ];
 
     const keyboard = document.getElementById("keyboard");
     keys.forEach(rowKeys => {
@@ -94,22 +104,14 @@
         rowDiv.appendChild(btn);
       });
       keyboard.appendChild(rowDiv);
-    });(k => {
-      const btn = document.createElement("button");
-      btn.textContent = k;
-      btn.classList.add("key");
-      btn.onclick = () => handleKey(k);
-      keyboard.appendChild(btn);
     });
 
     function handleKey(key) {
-      // Türkçe karakterleri destekle
       key = key.toUpperCase();
+      const validChars = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZX";
 
       if (key === "DEL") return deleteLetter();
       if (key === "ENTER") return submitRow();
-
-      const validChars = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZX";
       if (!validChars.includes(key)) return;
 
       if (currentCol < 5) {
@@ -127,6 +129,10 @@
       }
     }
 
+    function isValidWord(guess) {
+      return WORD_LIST.includes(guess.toUpperCase());
+    }
+
     function submitRow() {
       if (currentCol < 5) return;
 
@@ -136,15 +142,20 @@
         guess.push(cell.textContent);
       }
 
-      const result = checkGuess(guess.join(""));
+      const guessWord = guess.join("");
+      if (!isValidWord(guessWord)) {
+        alert("Geçersiz kelime!");
+        return;
+      }
 
+      const result = checkGuess(guessWord);
       for (let c = 0; c < 5; c++) {
         const cell = document.getElementById(`cell-${currentRow}-${c}`);
         cell.classList.add(result[c]);
       }
 
       if (result.every(r => r === "correct")) {
-        alert("Tebrikler!");
+        alert("Tebrikler! Kelimeyi buldunuz.");
         return;
       }
 
@@ -156,7 +167,6 @@
       const res = Array(5).fill("absent");
       const target = WORD.split("");
 
-      // Önce yeşilleri
       for (let i = 0; i < 5; i++) {
         if (guess[i] === target[i]) {
           res[i] = "correct";
@@ -164,7 +174,6 @@
         }
       }
 
-      // Sonra sarılar
       for (let i = 0; i < 5; i++) {
         if (res[i] !== "correct" && target.includes(guess[i])) {
           res[i] = "present";
@@ -173,6 +182,23 @@
       }
 
       return res;
+    }
+
+    // Türkiye saati ile günlük kelime seç
+    function getDailyWord() {
+      if (!WORD_LIST || WORD_LIST.length === 0) return null;
+
+      // Türkiye saat dilimi UTC+3
+      const now = new Date();
+      const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const istTime = new Date(utcTime + (3 * 60 * 60 * 1000));
+
+      const dateStr = istTime.getFullYear().toString() +
+                      (istTime.getMonth() + 1).toString().padStart(2,'0') +
+                      istTime.getDate().toString().padStart(2,'0');
+
+      const index = parseInt(dateStr) % WORD_LIST.length;
+      return WORD_LIST[index].toUpperCase();
     }
   </script>
 </body>
