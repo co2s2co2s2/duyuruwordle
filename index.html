@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wordle Klonu</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fafafa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .board {
+      display: grid;
+      grid-template-rows: repeat(6, 1fr);
+      gap: 10px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: repeat(5, 60px);
+      gap: 10px;
+    }
+    .cell {
+      width: 60px;
+      height: 60px;
+      border: 2px solid #ccc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 32px;
+      font-weight: bold;
+      text-transform: uppercase;
+      background: white;
+    }
+    .correct { background: #6aaa64; color: white; }
+    .present { background: #c9b458; color: white; }
+    .absent { background: #787c7e; color: white; }
+    .keyboard { margin-top: 20px; text-align: center; }
+    .key {
+      padding: 10px 14px;
+      margin: 3px;
+      border: none;
+      background: #ddd;
+      cursor: pointer;
+      font-weight: bold;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <div>
+    <div class="board" id="board"></div>
+    <div class="keyboard" id="keyboard"></div>
+  </div>
+
+  <script>
+    const WORD = "KARMA"; // Geçici olarak sabit; sonra rastgele yapılabilir
+    let currentRow = 0;
+    let currentCol = 0;
+
+    const board = document.getElementById("board");
+
+    for (let r = 0; r < 6; r++) {
+      const row = document.createElement("div");
+      row.classList.add("row");
+      for (let c = 0; c < 5; c++) {
+        const cell = document.createElement("div");
+        cell.classList.add("cell");
+        cell.id = `cell-${r}-${c}`;
+        row.appendChild(cell);
+      }
+      board.appendChild(row);
+    }
+
+    const keys = [
+      "Q","W","E","R","T","Y","U","I","O","P",
+      "A","S","D","F","G","H","J","K","L",
+      "ENTER","Z","X","C","V","B","N","M","DEL"
+    ];
+
+    const keyboard = document.getElementById("keyboard");
+    keys.forEach(k => {
+      const btn = document.createElement("button");
+      btn.textContent = k;
+      btn.classList.add("key");
+      btn.onclick = () => handleKey(k);
+      keyboard.appendChild(btn);
+    });
+
+    function handleKey(key) {
+      if (key === "DEL") return deleteLetter();
+      if (key === "ENTER") return submitRow();
+      if (currentCol < 5) {
+        const cell = document.getElementById(`cell-${currentRow}-${currentCol}`);
+        cell.textContent = key;
+        currentCol++;
+      }
+    }
+
+    function deleteLetter() {
+      if (currentCol > 0) {
+        currentCol--;
+        const cell = document.getElementById(`cell-${currentRow}-${currentCol}`);
+        cell.textContent = "";
+      }
+    }
+
+    function submitRow() {
+      if (currentCol < 5) return;
+
+      const guess = [];
+      for (let c = 0; c < 5; c++) {
+        const cell = document.getElementById(`cell-${currentRow}-${c}`);
+        guess.push(cell.textContent);
+      }
+
+      const result = checkGuess(guess.join(""));
+
+      for (let c = 0; c < 5; c++) {
+        const cell = document.getElementById(`cell-${currentRow}-${c}`);
+        cell.classList.add(result[c]);
+      }
+
+      if (result.every(r => r === "correct")) {
+        alert("Tebrikler!");
+        return;
+      }
+
+      currentRow++;
+      currentCol = 0;
+    }
+
+    function checkGuess(guess) {
+      const res = Array(5).fill("absent");
+      const target = WORD.split("");
+
+      // Önce yeşilleri
+      for (let i = 0; i < 5; i++) {
+        if (guess[i] === target[i]) {
+          res[i] = "correct";
+          target[i] = null;
+        }
+      }
+
+      // Sonra sarılar
+      for (let i = 0; i < 5; i++) {
+        if (res[i] !== "correct" && target.includes(guess[i])) {
+          res[i] = "present";
+          target[target.indexOf(guess[i])] = null;
+        }
+      }
+
+      return res;
+    }
+  </script>
+</body>
+</html>
