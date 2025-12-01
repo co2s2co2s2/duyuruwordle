@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wordle Klonu</title>
+  <title>DUYURU WORDLE</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -78,6 +78,13 @@
       font-size: 16px;
     }
 
+    #shareResult {
+      margin-top: 20px;
+      width: 100%;
+      max-width: 480px;
+      font-size: 16px;
+    }
+
     @media (max-width: 400px) {
       .row {
         gap: 5px;
@@ -87,12 +94,16 @@
         min-width: 28px;
         max-width: 36px;
       }
+      #shareResult {
+        font-size: 14px;
+      }
     }
   </style>
 </head>
 <body>
 
   <div>
+    <h1>DUYURU WORDLE</h1>
     <div class="board" id="board"></div>
     <div class="keyboard" id="keyboard"></div>
   </div>
@@ -102,6 +113,7 @@
     let WORD = null;
     let currentRow = 0;
     let currentCol = 0;
+    let guesses = [];
 
     function normalizeTurkish(str) {
       return str
@@ -120,7 +132,6 @@
       .then(list => {
         WORD_LIST = list.map(k => normalizeTurkish(k.trim()));
         WORD = getDailyWord();
-        // console.log("Bugünün kelimesi:", WORD); // Konsol logu kaldırıldı
       })
       .catch(err => console.error("Kelime listesi yüklenemedi:", err));
 
@@ -204,8 +215,10 @@
         cell.classList.add(result[c]);
       }
 
+      guesses.push({ guess: guessWord, result });
+
       if (result.every(r => r === "correct")) {
-        alert("Tebrikler! Kelimeyi buldunuz.");
+        showShareableResult();
         return;
       }
 
@@ -233,6 +246,34 @@
       }
 
       return res;
+    }
+
+    function showShareableResult() {
+      let output = `BUGÜNÜN 5'Lİ DUYURU WORDLE'INI ${guesses.length} TAHMİNDE ÇÖZDÜM.\n\n`;
+
+      guesses.forEach(t => {
+        let line = "";
+        t.result.forEach(r => {
+          if (r === "correct") line += "🟩";
+          else if (r === "present") line += "🟧";
+          else line += "⬛";
+        });
+        output += line + "\n";
+      });
+
+      let shareDiv = document.getElementById("shareResult");
+      if (!shareDiv) {
+        shareDiv = document.createElement("textarea");
+        shareDiv.id = "shareResult";
+        shareDiv.rows = guesses.length + 2;
+        shareDiv.cols = 30;
+        document.body.appendChild(shareDiv);
+      }
+      shareDiv.value = output;
+      shareDiv.select();
+      shareDiv.setSelectionRange(0, 99999);
+      document.execCommand("copy");
+      alert("Sonuç kopyalandı, paylaşabilirsin!");
     }
 
     function getDailyWord() {
