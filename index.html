@@ -64,11 +64,23 @@
     let currentRow = 0;
     let currentCol = 0;
 
-    // JSON sözlüğünü yükle
+    // Türkçe karakterleri normalize et
+    function normalizeTurkish(str) {
+      return str
+        .replace(/i/g, 'İ')
+        .replace(/ı/g, 'I')
+        .replace(/ş/g, 'Ş')
+        .replace(/ç/g, 'Ç')
+        .replace(/ü/g, 'Ü')
+        .replace(/ö/g, 'Ö')
+        .replace(/ğ/g, 'Ğ')
+        .toUpperCase();
+    }
+
     fetch("words.json")
       .then(res => res.json())
       .then(list => {
-        WORD_LIST = list.map(k => k.toUpperCase());
+        WORD_LIST = list.map(k => normalizeTurkish(k.trim()));
         WORD = getDailyWord();
         console.log("Bugünün kelimesi:", WORD);
       })
@@ -107,7 +119,7 @@
     });
 
     function handleKey(key) {
-      key = key.toUpperCase();
+      key = normalizeTurkish(key);
       const validChars = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZX";
 
       if (key === "DEL") return deleteLetter();
@@ -130,7 +142,7 @@
     }
 
     function isValidWord(guess) {
-      return WORD_LIST.includes(guess.toUpperCase());
+      return WORD_LIST.includes(normalizeTurkish(guess));
     }
 
     function submitRow() {
@@ -166,6 +178,7 @@
     function checkGuess(guess) {
       const res = Array(5).fill("absent");
       const target = WORD.split("");
+      guess = normalizeTurkish(guess).split("");
 
       for (let i = 0; i < 5; i++) {
         if (guess[i] === target[i]) {
@@ -184,11 +197,8 @@
       return res;
     }
 
-    // Türkiye saati ile günlük kelime seç
     function getDailyWord() {
       if (!WORD_LIST || WORD_LIST.length === 0) return null;
-
-      // Türkiye saat dilimi UTC+3
       const now = new Date();
       const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
       const istTime = new Date(utcTime + (3 * 60 * 60 * 1000));
@@ -198,7 +208,7 @@
                       istTime.getDate().toString().padStart(2,'0');
 
       const index = parseInt(dateStr) % WORD_LIST.length;
-      return WORD_LIST[index].toUpperCase();
+      return WORD_LIST[index];
     }
   </script>
 </body>
