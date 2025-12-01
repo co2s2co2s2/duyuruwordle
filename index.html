@@ -78,25 +78,34 @@
       font-size: 16px;
     }
 
-    #shareResult {
+    #shareResultContainer {
       margin-top: 20px;
+      text-align: center;
+    }
+
+    #shareResult {
       width: 100%;
       max-width: 480px;
       font-size: 16px;
+      margin-top: 10px;
+    }
+
+    #copyButton {
+      margin-top: 10px;
+      padding: 8px 16px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      background-color: #6aaa64;
+      color: white;
+      border-radius: 4px;
     }
 
     @media (max-width: 400px) {
-      .row {
-        gap: 5px;
-      }
-      .key {
-        font-size: 14px;
-        min-width: 28px;
-        max-width: 36px;
-      }
-      #shareResult {
-        font-size: 14px;
-      }
+      .row { gap: 5px; }
+      .key { font-size: 14px; min-width: 28px; max-width: 36px; }
+      #shareResult { font-size: 14px; }
+      #copyButton { font-size: 14px; }
     }
   </style>
 </head>
@@ -106,6 +115,7 @@
     <h1>DUYURU WORDLE</h1>
     <div class="board" id="board"></div>
     <div class="keyboard" id="keyboard"></div>
+    <div id="shareResultContainer"></div>
   </div>
 
   <script>
@@ -132,6 +142,7 @@
       .then(list => {
         WORD_LIST = list.map(k => normalizeTurkish(k.trim()));
         WORD = getDailyWord();
+        checkIfPlayed();
       })
       .catch(err => console.error("Kelime listesi yüklenemedi:", err));
 
@@ -217,7 +228,8 @@
 
       guesses.push({ guess: guessWord, result });
 
-      if (result.every(r => r === "correct")) {
+      if (result.every(r => r === "correct") || currentRow === 5) {
+        saveResult();
         showShareableResult();
         return;
       }
@@ -249,8 +261,16 @@
     }
 
     function showShareableResult() {
-      let output = `BUGÜNÜN 5'Lİ DUYURU WORDLE'INI ${guesses.length} TAHMİNDE ÇÖZDÜM.\n\n`;
+      const container = document.getElementById("shareResultContainer");
+      container.innerHTML = "";
 
+      const title = document.createElement("div");
+      title.textContent = "TEBRİKLER BİLDİN";
+      title.style.fontWeight = "bold";
+      title.style.marginBottom = "10px";
+      container.appendChild(title);
+
+      let output = `BUGÜNÜN 5'Lİ DUYURU WORDLE'INI ${guesses.length} TAHMİNDE ÇÖZDÜM.\n\n`;
       guesses.forEach(t => {
         let line = "";
         t.result.forEach(r => {
@@ -261,19 +281,39 @@
         output += line + "\n";
       });
 
-      let shareDiv = document.getElementById("shareResult");
-      if (!shareDiv) {
-        shareDiv = document.createElement("textarea");
-        shareDiv.id = "shareResult";
-        shareDiv.rows = guesses.length + 2;
-        shareDiv.cols = 30;
-        document.body.appendChild(shareDiv);
+      const textarea = document.createElement("textarea");
+      textarea.id = "shareResult";
+      textarea.rows = guesses.length + 2;
+      textarea.cols = 30;
+      textarea.value = output;
+      container.appendChild(textarea);
+
+      const copyBtn = document.createElement("button");
+      copyBtn.id = "copyButton";
+      copyBtn.textContent = "Kopyala";
+      copyBtn.onclick = () => {
+        textarea.select();
+        textarea.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(textarea.value);
+        alert("Sonuç kopyalandı!");
+      };
+      container.appendChild(copyBtn);
+    }
+
+    function saveResult() {
+      const today = new Date().toISOString().slice(0,10);
+      localStorage.setItem('duyuruWordlePlayed', JSON.stringify({ date: today, result: guesses }));
+    }
+
+    function checkIfPlayed() {
+      const played = JSON.parse(localStorage.getItem('duyuruWordlePlayed'));
+      const today = new Date().toISOString().slice(0,10);
+      if (played && played.date === today) {
+        guesses = played.result;
+        showShareableResult();
+        return true;
       }
-      shareDiv.value = output;
-      shareDiv.select();
-      shareDiv.setSelectionRange(0, 99999);
-      document.execCommand("copy");
-      alert("Sonuç kopyalandı, paylaşabilirsin!");
+      return false;
     }
 
     function getDailyWord() {
