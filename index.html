@@ -13,6 +13,7 @@
       align-items: center;
       height: 100vh;
       margin: 0;
+      flex-direction: column;
     }
     .board {
       display: grid;
@@ -39,15 +40,33 @@
     .correct { background: #6aaa64; color: white; }
     .present { background: #c9b458; color: white; }
     .absent { background: #787c7e; color: white; }
-    .keyboard { margin-top: 20px; text-align: center; }
+    .keyboard { margin-top: 20px; text-align: center; width: 100%; max-width: 480px; }
+    .keyboard div {
+      display: flex;
+      flex-wrap: nowrap;
+      justify-content: center;
+      margin-bottom: 5px;
+    }
     .key {
-      padding: 10px 14px;
-      margin: 3px;
+      padding: 10px 0;
+      margin: 2px;
+      min-width: 32px;
+      flex: 1 1 auto;
+      max-width: 48px;
+      text-align: center;
+      font-weight: bold;
+      border-radius: 4px;
       border: none;
       background: #ddd;
       cursor: pointer;
-      font-weight: bold;
-      border-radius: 4px;
+      font-size: 16px;
+    }
+    @media (max-width: 400px) {
+      .key {
+        font-size: 14px;
+        min-width: 28px;
+        max-width: 36px;
+      }
     }
   </style>
 </head>
@@ -64,7 +83,6 @@
     let currentRow = 0;
     let currentCol = 0;
 
-    // Türkçe karakterleri normalize et
     function normalizeTurkish(str) {
       return str
         .replace(/i/g, 'İ')
