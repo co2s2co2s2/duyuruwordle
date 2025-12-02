@@ -78,7 +78,6 @@
       font-size: 16px;
     }
 
-    /* Modal styling */
     .modal {
       display: none;
       position: fixed;
@@ -128,7 +127,6 @@
     <div class="keyboard" id="keyboard"></div>
   </div>
 
-  <!-- Modal -->
   <div id="resultModal" class="modal">
     <div class="modal-content" id="modalContent">
       <div id="modalMessage" style="font-weight:bold;margin-bottom:10px;">TEBRİKLER BİLDİN</div>
@@ -137,7 +135,7 @@
     </div>
   </div>
 
-  <script>
+<script>
     let WORD_LIST = [];
     let WORD = null;
     let currentRow = 0;
@@ -162,8 +160,7 @@
         WORD_LIST = list.map(k => normalizeTurkish(k.trim()));
         WORD = getDailyWord();
         checkIfPlayed();
-      })
-      .catch(err => console.error("Kelime listesi yüklenemedi:", err));
+      });
 
     const board = document.getElementById("board");
     for (let r = 0; r < 6; r++) {
@@ -247,6 +244,8 @@
 
       guesses.push({ guess: guessWord, result });
 
+      updateKeyboardColors(guessWord, result);  /// 🔥 KLAVYE RENK GÜNCELLEME
+
       if (result.every(r => r === "correct") || currentRow === 5) {
         saveResult();
         showShareableResult();
@@ -277,6 +276,38 @@
       }
 
       return res;
+    }
+
+    /// 🔥 KLAVYE RENK GÜNCELLEME FONKSİYONU
+    function updateKeyboardColors(guess, result) {
+      const keyButtons = document.querySelectorAll(".key");
+
+      guess.split("").forEach((letter, index) => {
+        const keyBtn = Array.from(keyButtons).find(b => b.textContent === letter);
+        if (!keyBtn) return;
+
+        const res = result[index];
+
+        if (res === "correct") {
+          keyBtn.style.backgroundColor = "#6aaa64";
+          keyBtn.style.color = "white";
+          keyBtn.dataset.state = "correct";
+        }
+        else if (res === "present") {
+          if (keyBtn.dataset.state !== "correct") {
+            keyBtn.style.backgroundColor = "#c9b458";
+            keyBtn.style.color = "white";
+            keyBtn.dataset.state = "present";
+          }
+        }
+        else if (res === "absent") {
+          if (!keyBtn.dataset.state) {
+            keyBtn.style.backgroundColor = "#787c7e";
+            keyBtn.style.color = "white";
+            keyBtn.dataset.state = "absent";
+          }
+        }
+      });
     }
 
     function showShareableResult() {
@@ -330,13 +361,13 @@
       return WORD_LIST[index];
     }
 
-    // Close modal when clicking outside content
     window.onclick = function(event) {
       const modal = document.getElementById("resultModal");
       if (event.target == modal) {
         modal.style.display = "none";
       }
     }
-  </script>
+</script>
+
 </body>
 </html>
