@@ -83,7 +83,7 @@
       cursor: not-allowed;
     }
 
-    /* Modal styling */
+    /* Modal */
     .modal {
       display: none;
       position: fixed;
@@ -128,7 +128,7 @@
       border-radius: 4px;
     }
 
-    /* Dev-tag (geliştirici modu açıkken görünür) */
+    /* Dev Mode Tag */
     #devTag {
       position: fixed;
       right: 12px;
@@ -171,28 +171,33 @@
     </div>
   </div>
 
-  <!-- Dev tag (görünürse devMode açık demektir) -->
+  <!-- Dev Tag -->
   <div id="devTag" title="Dev mode açık — tıklayarak kapat">DEV MODE</div>
 
   <script>
     // --------------------------
-    // DEV MODE: nasıl kullanılır?
-    // --------------------------
-    // Konsolda çalıştır:
-    // localStorage.setItem('duyuruDevMode','true'); location.reload();
-    // dev modunu kapatmak:
-    // localStorage.removeItem('duyuruDevMode'); location.reload();
-    //
-    // Ayrıca konsol fonksiyonları:
-    // enableDevMode(), disableDevMode(), resetToday()
+    // DEV MODE
     // --------------------------
 
     const DEV_MODE = localStorage.getItem('duyuruDevMode') === 'true';
 
-    // Konsol yardımcıları
-    window.enableDevMode = () => { localStorage.setItem('duyuruDevMode','true'); console.log('Dev mode enabled. Reloading...'); location.reload(); };
-    window.disableDevMode = () => { localStorage.removeItem('duyuruDevMode'); console.log('Dev mode disabled. Reloading...'); location.reload(); };
-    window.resetToday = () => { localStorage.removeItem('duyuruWordlePlayed'); console.log('Today reset. Reloading...'); location.reload(); };
+    window.enableDevMode = () => {
+      localStorage.setItem('duyuruDevMode','true');
+      console.log('Dev mode enabled. Reloading...');
+      location.reload();
+    };
+
+    window.disableDevMode = () => {
+      localStorage.removeItem('duyuruDevMode');
+      console.log('Dev mode disabled. Reloading...');
+      location.reload();
+    };
+
+    window.resetToday = () => {
+      localStorage.removeItem('duyuruWordlePlayed');
+      console.log('Today reset. Reloading...');
+      location.reload();
+    };
 
     let WORD_LIST = [];
     let WORD = null;
@@ -221,7 +226,7 @@
       })
       .catch(err => console.error("Kelime listesi yüklenemedi:", err));
 
-    // Board oluşturma
+    // Board
     const board = document.getElementById("board");
     for (let r = 0; r < 6; r++) {
       const row = document.createElement("div");
@@ -235,7 +240,7 @@
       board.appendChild(row);
     }
 
-    // Klavye oluşturma
+    // Klavye
     const keys = [
       ["Q","W","E","R","T","Y","U","I","O","P","Ğ","Ü"],
       ["A","S","D","F","G","H","J","K","L","Ş","İ"],
@@ -256,46 +261,29 @@
     });
 
     function init() {
-      // Eğer dev mode açık ise, görsel tag göster
       const devTag = document.getElementById('devTag');
       if (DEV_MODE) {
         devTag.style.display = 'block';
-        devTag.onclick = () => { // tıklayınca kapatmak kolay olsun
-          disableDevMode();
-        };
-      } else {
-        devTag.style.display = 'none';
+        devTag.onclick = () => disableDevMode();
       }
 
-      // kontrol: aynı gün oynandı mı? (dev mode kapalıysa engelle)
       if (!checkIfPlayed() || DEV_MODE) {
-        // Oyun başlatılabilir (dev mode açıksa override ile izin verilir)
-        // Eğer dev mode açık ve daha önce oynandıysa, eski sonucu göstermeyip yeni oyun başlat
-        if (DEV_MODE) {
-          resetGame();
-        }
+        if (DEV_MODE) resetGame();
       }
 
-      // Modal X kapatma
       document.getElementById("modalClose").onclick = () => {
         document.getElementById("resultModal").style.display = "none";
       };
     }
 
-    // KEY HANDLING
+    // Key handling
     function handleKey(key) {
-      // Eğer klavye pasifse (normal mod ve oyun önceden oynanmış) engelle
-      if (!DEV_MODE) {
-        // kontrol: eğer oynandıysa klavye disabled attribute ile zaten pasif
-        // burada ekstra kontrol gerekmiyor
-      }
-
       key = normalizeTurkish(key);
-      const validChars = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZX";
+      const valid = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZX";
 
       if (key === "DEL") return deleteLetter();
       if (key === "ENTER") return submitRow();
-      if (!validChars.includes(key)) return;
+      if (!valid.includes(key)) return;
 
       if (currentCol < 5) {
         const cell = document.getElementById(`cell-${currentRow}-${currentCol}`);
@@ -312,8 +300,8 @@
       }
     }
 
-    function isValidWord(guess) {
-      return WORD_LIST.includes(normalizeTurkish(guess));
+    function isValidWord(g) {
+      return WORD_LIST.includes(normalizeTurkish(g));
     }
 
     function submitRow() {
@@ -321,33 +309,28 @@
 
       const guess = [];
       for (let c = 0; c < 5; c++) {
-        const cell = document.getElementById(`cell-${currentRow}-${c}`);
-        guess.push(cell.textContent);
+        guess.push(document.getElementById(`cell-${currentRow}-${c}`).textContent);
       }
-
       const guessWord = guess.join("");
+
       if (!isValidWord(guessWord)) {
         alert("Geçersiz kelime!");
         return;
       }
 
       const result = checkGuess(guessWord);
-      for (let c = 0; c < 5; c++) {
-        const cell = document.getElementById(`cell-${currentRow}-${c}`);
-        cell.classList.add(result[c]);
-      }
+      result.forEach((r, c) => {
+        document.getElementById(`cell-${currentRow}-${c}`).classList.add(r);
+      });
 
       guesses.push({ guess: guessWord, result });
 
-      // Eğer dev mode açık ise kaydetme yapma (ana kaydı bozmamak için)
       if (!DEV_MODE) {
         saveResult();
       }
 
-      // Modal göster (oyun bittiğinde ya da son denemede)
       if (result.every(r => r === "correct") || currentRow === 5) {
         showShareableResult();
-        // Eğer dev moddaysan, modal'da "Yeni oyun (Dev)" butonu görünecek ve oyun devam ettirilebilir
         return;
       }
 
@@ -355,22 +338,22 @@
       currentCol = 0;
     }
 
-    function checkGuess(guess) {
+    function checkGuess(g) {
       const res = Array(5).fill("absent");
       const target = WORD.split("");
-      guess = normalizeTurkish(guess).split("");
+      g = normalizeTurkish(g).split("");
 
       for (let i = 0; i < 5; i++) {
-        if (guess[i] === target[i]) {
+        if (g[i] === target[i]) {
           res[i] = "correct";
           target[i] = null;
         }
       }
 
       for (let i = 0; i < 5; i++) {
-        if (res[i] !== "correct" && target.includes(guess[i])) {
+        if (res[i] !== "correct" && target.includes(g[i])) {
           res[i] = "present";
-          target[target.indexOf(guess[i])] = null;
+          target[target.indexOf(g[i])] = null;
         }
       }
 
@@ -378,103 +361,84 @@
     }
 
     function getResultMessage(count) {
-  const link = " Sen de oynamak istiyorsan: https://co2s2co2s2.github.io/duyuruwordle/";
+      const link = " Sen de oynamak istiyorsan: https://co2s2co2s2.github.io/duyuruwordle/";
 
-  switch(count) {
-    case 1:
-      return "Duyuru Wordle’da ilk kelimeyi bir yazdım, çat diye çıktı😎" + link;
-    case 2:
-      return "Duyuru Wordle’da iki tahminde bildim, muazzamım😁" + link;
-    case 3:
-      return "Duyuru Wordle’da ilkinde olmadı, ikincide olmadı, üçüncüde buldum😉" + link;
-    case 4:
-      return "Duyuru Wordle’da dördüncü denemede buldum, fena sayılmam🙂" + link;
-    case 5:
-      return "Duyuru Wordle’da beşinci denemede ancak bulabildim😅" + link;
-    case 6:
-      return "Duyuru Wordle’da altıda zor bela çözdüm🤨" + link;
-    default:
-      return "Bugün Duyuru Wordle’da maalesef bilemedim😢" + link;
-  }
-}
+      switch(count) {
+        case 1: return "Duyuru Wordle’da ilk kelimeyi bir yazdım, çat diye çıktı😎" + link;
+        case 2: return "Duyuru Wordle’ı iki tahminde bildim, muazzamım😁" + link;
+        case 3: return "Duyuru Wordle ilkinde olmadı, ikincide olmadı, üçüncüde buldum😉" + link;
+        case 4: return "Duyuru Wordle’ı dördüncü denemede buldum, fena sayılmam🙂" + link;
+        case 5: return "Duyuru Wordle’ı beşinci denemede ancak bulabildim😅" + link;
+        case 6: return "Duyuru Wordle’ı altıda zor bela çözdüm🤨" + link;
+        default: return "Bugün Duyuru Wordle’ı maalesef çözemedim😢" + link;
+      }
+    }
 
-
-    // Modal ve paylaşım
     function showShareableResult() {
       const modal = document.getElementById("resultModal");
       const modalEmojis = document.getElementById("modalEmojis");
       const modalMessage = document.getElementById("modalMessage");
 
       const count = guesses.length;
-      // Mesajın ilk harfi büyük, geri normal (getResultMessage already formatted roughly)
       const msg = getResultMessage(count);
+
       modalMessage.textContent = msg;
 
-      let output = `${msg}\n\n`;
+      let out = `${msg}\n\n`;
       guesses.forEach(t => {
-        let line = "";
-        t.result.forEach(r => {
-          if (r === "correct") line += "🟩";
-          else if (r === "present") line += "🟧";
-          else line += "⬛";
-        });
-        output += line + "\n";
+        out += t.result.map(r =>
+          r === "correct" ? "🟩" :
+          r === "present" ? "🟧" : "⬛"
+        ).join("") + "\n";
       });
 
-      modalEmojis.textContent = output;
+      modalEmojis.textContent = out;
       modal.style.display = "flex";
-      modal.setAttribute('aria-hidden', 'false');
+      modal.setAttribute("aria-hidden", "false");
 
-      // Kopyala butonu
-      const copyBtn = document.getElementById("copyButton");
-      copyBtn.onclick = () => {
-        navigator.clipboard.writeText(output);
+      document.getElementById("copyButton").onclick = () => {
+        navigator.clipboard.writeText(out);
         alert("Sonuç kopyalandı!");
       };
 
-      // Eğer dev mode aktifse modal'a "Yeni oyun (Dev)" butonu ekle
-      // (önce varsa kaldır)
-      const existingNewBtn = document.getElementById('devNewGameBtn');
-      if (existingNewBtn) existingNewBtn.remove();
+      // Dev mode new game button
+      const old = document.getElementById("devNewGameBtn");
+      if (old) old.remove();
 
       if (DEV_MODE) {
-        const btn = document.createElement('button');
-        btn.id = 'devNewGameBtn';
-        btn.textContent = 'Yeni oyun (Dev)';
-        btn.style.marginLeft = '10px';
-        btn.style.padding = '8px 12px';
-        btn.style.borderRadius = '6px';
-        btn.style.border = 'none';
-        btn.style.cursor = 'pointer';
+        const btn = document.createElement("button");
+        btn.id = "devNewGameBtn";
+        btn.textContent = "Yeni oyun (Dev)";
+        btn.style.marginLeft = "10px";
+        btn.style.padding = "8px 12px";
+        btn.style.borderRadius = "6px";
+        btn.style.border = "none";
+        btn.style.cursor = "pointer";
         btn.onclick = () => {
-          // modal kapat, oyun sıfırla
-          modal.style.display = 'none';
+          modal.style.display = "none";
           resetGame();
         };
-        // place next to copyBtn
-        copyBtn.parentNode.appendChild(btn);
+        document.getElementById("copyButton").parentNode.appendChild(btn);
       }
     }
 
     function saveResult() {
       const today = new Date().toISOString().slice(0,10);
-      localStorage.setItem('duyuruWordlePlayed', JSON.stringify({ date: today, result: guesses }));
+      localStorage.setItem('duyuruWordlePlayed', JSON.stringify({
+        date: today,
+        result: guesses
+      }));
     }
 
-    // Eğer aynı gün oynandıysa: önceki tahminleri göster ve klavyeyi pasif yap
     function checkIfPlayed() {
       const played = JSON.parse(localStorage.getItem('duyuruWordlePlayed'));
       const today = new Date().toISOString().slice(0,10);
 
       if (played && played.date === today) {
-        if (DEV_MODE) {
-          // Dev modunda önceki sonucu göstermiyoruz; kullanıcı yeni oyun oynasın
-          return false;
-        }
+        if (DEV_MODE) return false;
 
         guesses = played.result;
 
-        // Board'u eski tahminlerle doldur
         guesses.forEach((t, r) => {
           t.guess.split("").forEach((ch, c) => {
             const cell = document.getElementById(`cell-${r}-${c}`);
@@ -483,11 +447,7 @@
           });
         });
 
-        // Klavyeyi pasif yap
-        const keys = document.querySelectorAll(".key");
-        keys.forEach(k => k.disabled = true);
-
-        // Modal'ı göster
+        document.querySelectorAll(".key").forEach(k => k.disabled = true);
         showShareableResult();
 
         return true;
@@ -498,45 +458,29 @@
     }
 
     function resetGame() {
-      // Sıfırla board ve değişkenler
       for (let r = 0; r < 6; r++) {
         for (let c = 0; c < 5; c++) {
           const cell = document.getElementById(`cell-${r}-${c}`);
           cell.textContent = "";
-          cell.classList.remove('correct','present','absent');
+          cell.classList.remove("correct","present","absent");
         }
       }
       currentRow = 0;
       currentCol = 0;
       guesses = [];
 
-      // Enable keyboard buttons
-      const keys = document.querySelectorAll(".key");
-      keys.forEach(k => k.disabled = false);
+      document.querySelectorAll(".key").forEach(k => k.disabled = false);
     }
 
-    // Basit günlük kelime seçimi (senin eski mantık)
     function getDailyWord() {
-      if (!WORD_LIST || WORD_LIST.length === 0) return null;
+      if (!WORD_LIST.length) return null;
       const now = new Date();
-      const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-      const istTime = new Date(utcTime + (3 * 60 * 60 * 1000));
-      const dateStr = istTime.getFullYear().toString() +
-                      (istTime.getMonth() + 1).toString().padStart(2,'0') +
-                      istTime.getDate().toString().padStart(2,'0');
-      const hash = parseInt(dateStr); // basit hash
-      const index = hash % WORD_LIST.length;
-      return WORD_LIST[index];
+      const utc = now.getTime() + now.getTimezoneOffset()*60000;
+      const ist = new Date(utc + 3*60*60*1000);
+      const d = `${ist.getFullYear()}${String(ist.getMonth()+1).padStart(2,"0")}${String(ist.getDate()).padStart(2,"0")}`;
+      const h = parseInt(d);
+      return WORD_LIST[h % WORD_LIST.length];
     }
-
-    // yardımcı: disableDevMode fonksiyonu (sayfa içinde kullanılır)
-    function disableDevMode() {
-      localStorage.removeItem('duyuruDevMode');
-      location.reload();
-    }
-
-    // Başlangıç: init() çağrıldıktan sonra hazır
-    // (init(), fetch.then içinde çağrılıyor)
   </script>
 </body>
 </html>
