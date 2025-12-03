@@ -378,16 +378,26 @@
     }
 
     function getResultMessage(count) {
-      switch(count) {
-        case 1: return "Oooo çok şanslıyım!";
-        case 2: return "İyi gidiyor, iki denemede çözdüm.";
-        case 3: return "Eh işte, üç denemede hallettim.";
-        case 4: return "Dört denemede çözdüm, fena değil.";
-        case 5: return "Beş denemede çözdüm, ufff...";
-        case 6: return "Anca bu kadar oldu 😅";
-        default: return "Bugün bilemedim 😢";
-      }
-    }
+  const link = " Sen de oynamak istiyorsan: https://co2s2co2s2.github.io/duyuruwordle/";
+
+  switch(count) {
+    case 1:
+      return "Duyuru Wordle’da ilk kelimeyi bir yazdım, çat diye çıktı😎" + link;
+    case 2:
+      return "Duyuru Wordle’da iki tahminde bildim, muazzamım😁" + link;
+    case 3:
+      return "Duyuru Wordle’da ilkinde olmadı, ikincide olmadı, üçüncüde buldum😉" + link;
+    case 4:
+      return "Duyuru Wordle’da dördüncü denemede buldum, fena sayılmam🙂" + link;
+    case 5:
+      return "Duyuru Wordle’da beşinci denemede ancak bulabildim😅" + link;
+    case 6:
+      return "Duyuru Wordle’da altıda zor bela çözdüm🤨" + link;
+    default:
+      return "Bugün Duyuru Wordle’da maalesef bilemedim😢" + link;
+  }
+}
+
 
     // Modal ve paylaşım
     function showShareableResult() {
