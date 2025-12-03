@@ -16,13 +16,6 @@
       flex-direction: column;
     }
 
-    h1 {
-      text-align: center;
-      font-size: 32px;
-      margin-bottom: 20px;
-      letter-spacing: 1px;
-    }
-
     .board {
       display: grid;
       grid-template-rows: repeat(6, 1fr);
@@ -124,18 +117,6 @@
       font-weight: bold;
     }
 
-    #modalMessage {
-      font-weight: bold;
-      margin-bottom: 10px;
-      white-space: pre-wrap;
-    }
-
-    #modalEmojis {
-      white-space: pre-wrap;
-      font-size: 18px;
-      text-align: center;
-    }
-
     #copyButton {
       margin-top: 15px;
       padding: 8px 16px;
@@ -172,19 +153,20 @@
 </head>
 <body>
 
-  <h1>DUYURU WORDLE</h1>
-
-  <div class="board" id="board"></div>
-  <div class="keyboard" id="keyboard"></div>
+  <div>
+    <h1>Duyuru Wordle</h1>
+    <div class="board" id="board"></div>
+    <div class="keyboard" id="keyboard"></div>
+  </div>
 
   <!-- Modal -->
   <div id="resultModal" class="modal" aria-hidden="true">
     <div class="modal-content" id="modalContent">
       <span id="modalClose" title="Kapat">&times;</span>
-      <div id="modalMessage"></div>
-      <pre id="modalEmojis"></pre>
+      <div id="modalMessage" style="font-weight:bold;margin-bottom:10px;">Tebrikler bildin!</div>
+      <pre id="modalEmojis" style="white-space: pre-wrap; font-size: 18px; text-align:center;"></pre>
       <div style="margin-top:12px;">
-        <button id="copyButton">Sonucu Kopyala</button>
+        <button id="copyButton">Kopyala</button>
       </div>
     </div>
   </div>
@@ -193,11 +175,29 @@
   <div id="devTag" title="Dev mode açık — tıklayarak kapat">DEV MODE</div>
 
   <script>
+    // --------------------------
+    // DEV MODE
+    // --------------------------
+
     const DEV_MODE = localStorage.getItem('duyuruDevMode') === 'true';
 
-    window.enableDevMode = () => { localStorage.setItem('duyuruDevMode','true'); location.reload(); };
-    window.disableDevMode = () => { localStorage.removeItem('duyuruDevMode'); location.reload(); };
-    window.resetToday = () => { localStorage.removeItem('duyuruWordlePlayed'); location.reload(); };
+    window.enableDevMode = () => {
+      localStorage.setItem('duyuruDevMode','true');
+      console.log('Dev mode enabled. Reloading...');
+      location.reload();
+    };
+
+    window.disableDevMode = () => {
+      localStorage.removeItem('duyuruDevMode');
+      console.log('Dev mode disabled. Reloading...');
+      location.reload();
+    };
+
+    window.resetToday = () => {
+      localStorage.removeItem('duyuruWordlePlayed');
+      console.log('Today reset. Reloading...');
+      location.reload();
+    };
 
     let WORD_LIST = [];
     let WORD = null;
@@ -206,10 +206,15 @@
     let guesses = [];
 
     function normalizeTurkish(str) {
-      return str.replace(/i/g,'İ').replace(/ı/g,'I').replace(/ş/g,'Ş')
-                .replace(/ç/g,'Ç').replace(/ü/g,'Ü')
-                .replace(/ö/g,'Ö')
-                .replace(/ğ/g,'Ğ').toUpperCase();
+      return str
+        .replace(/i/g, 'İ')
+        .replace(/ı/g, 'I')
+        .replace(/ş/g, 'Ş')
+        .replace(/ç/g, 'Ç')
+        .replace(/ü/g, 'Ü')
+        .replace(/ö/g, 'Ö')
+        .replace(/ğ/g, 'Ğ')
+        .toUpperCase();
     }
 
     fetch("words.json")
@@ -218,158 +223,262 @@
         WORD_LIST = list.map(k => normalizeTurkish(k.trim()));
         WORD = getDailyWord();
         init();
-      }).catch(err => console.error("Kelime listesi yüklenemedi:", err));
+      })
+      .catch(err => console.error("Kelime listesi yüklenemedi:", err));
 
     // Board
     const board = document.getElementById("board");
-    for(let r=0;r<6;r++){
-      const row=document.createElement("div"); row.classList.add("row");
-      for(let c=0;c<5;c++){
-        const cell=document.createElement("div"); cell.classList.add("cell");
-        cell.id=`cell-${r}-${c}`; row.appendChild(cell);
+    for (let r = 0; r < 6; r++) {
+      const row = document.createElement("div");
+      row.classList.add("row");
+      for (let c = 0; c < 5; c++) {
+        const cell = document.createElement("div");
+        cell.classList.add("cell");
+        cell.id = `cell-${r}-${c}`;
+        row.appendChild(cell);
       }
       board.appendChild(row);
     }
 
-    // Keyboard
+    // Klavye
     const keys = [
       ["Q","W","E","R","T","Y","U","I","O","P","Ğ","Ü"],
       ["A","S","D","F","G","H","J","K","L","Ş","İ"],
       ["ENTER","Z","X","C","V","B","N","M","Ö","Ç","DEL"]
     ];
+
     const keyboard = document.getElementById("keyboard");
-    keys.forEach(rowKeys=>{
-      const rowDiv=document.createElement("div");
-      rowKeys.forEach(k=>{
-        const btn=document.createElement("button"); btn.textContent=k;
-        btn.classList.add("key"); btn.onclick=()=>handleKey(k);
+    keys.forEach(rowKeys => {
+      const rowDiv = document.createElement("div");
+      rowKeys.forEach(k => {
+        const btn = document.createElement("button");
+        btn.textContent = k;
+        btn.classList.add("key");
+        btn.onclick = () => handleKey(k);
         rowDiv.appendChild(btn);
       });
       keyboard.appendChild(rowDiv);
     });
 
     function init() {
-      const devTag=document.getElementById('devTag');
-      if(DEV_MODE){ devTag.style.display='block'; devTag.onclick=()=>disableDevMode(); }
-      if(!checkIfPlayed() || DEV_MODE){ if(DEV_MODE) resetGame(); }
+      const devTag = document.getElementById('devTag');
+      if (DEV_MODE) {
+        devTag.style.display = 'block';
+        devTag.onclick = () => disableDevMode();
+      }
+
+      if (!checkIfPlayed() || DEV_MODE) {
+        if (DEV_MODE) resetGame();
+      }
+
       document.getElementById("modalClose").onclick = () => {
         document.getElementById("resultModal").style.display = "none";
       };
     }
 
+    // Key handling
     function handleKey(key) {
-      key = normalizeTurkish(key); 
-      const valid="ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZX";
-      if(key==="DEL") return deleteLetter();
-      if(key==="ENTER") return submitRow();
-      if(!valid.includes(key)) return;
-      if(currentCol<5){
-        const cell=document.getElementById(`cell-${currentRow}-${currentCol}`);
-        cell.textContent=key; currentCol++;
+      key = normalizeTurkish(key);
+      const valid = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZX";
+
+      if (key === "DEL") return deleteLetter();
+      if (key === "ENTER") return submitRow();
+      if (!valid.includes(key)) return;
+
+      if (currentCol < 5) {
+        const cell = document.getElementById(`cell-${currentRow}-${currentCol}`);
+        cell.textContent = key;
+        currentCol++;
       }
     }
 
-    function deleteLetter(){ if(currentCol>0){ currentCol--; document.getElementById(`cell-${currentRow}-${currentCol}`).textContent=""; } }
-
-    function isValidWord(g){ return WORD_LIST.includes(normalizeTurkish(g)); }
-
-    function submitRow(){
-      if(currentCol<5) return;
-      const guess=[]; for(let c=0;c<5;c++){ guess.push(document.getElementById(`cell-${currentRow}-${c}`).textContent); }
-      const guessWord=guess.join("");
-      if(!isValidWord(guessWord)){ alert("Geçersiz kelime!"); return; }
-      const result=checkGuess(guessWord); result.forEach((r,c)=>document.getElementById(`cell-${currentRow}-${c}`).classList.add(r));
-      guesses.push({guess:guessWord,result});
-      if(!DEV_MODE) saveResult();
-      if(result.every(r=>r==="correct") || currentRow===5){ showShareableResult(); return; }
-      currentRow++; currentCol=0;
+    function deleteLetter() {
+      if (currentCol > 0) {
+        currentCol--;
+        const cell = document.getElementById(`cell-${currentRow}-${currentCol}`);
+        cell.textContent = "";
+      }
     }
 
-    function checkGuess(g){
-      const res=Array(5).fill("absent"); const target=WORD.split(""); g=normalizeTurkish(g).split("");
-      for(let i=0;i<5;i++){ if(g[i]===target[i]){ res[i]="correct"; target[i]=null; } }
-      for(let i=0;i<5;i++){ if(res[i]!=="correct" && target.includes(g[i])){ res[i]="present"; target[target.indexOf(g[i])]=null; } }
+    function isValidWord(g) {
+      return WORD_LIST.includes(normalizeTurkish(g));
+    }
+
+    function submitRow() {
+      if (currentCol < 5) return;
+
+      const guess = [];
+      for (let c = 0; c < 5; c++) {
+        guess.push(document.getElementById(`cell-${currentRow}-${c}`).textContent);
+      }
+      const guessWord = guess.join("");
+
+      if (!isValidWord(guessWord)) {
+        alert("Geçersiz kelime!");
+        return;
+      }
+
+      const result = checkGuess(guessWord);
+      result.forEach((r, c) => {
+        document.getElementById(`cell-${currentRow}-${c}`).classList.add(r);
+      });
+
+      guesses.push({ guess: guessWord, result });
+
+      if (!DEV_MODE) {
+        saveResult();
+      }
+
+      if (result.every(r => r === "correct") || currentRow === 5) {
+        showShareableResult();
+        return;
+      }
+
+      currentRow++;
+      currentCol = 0;
+    }
+
+    function checkGuess(g) {
+      const res = Array(5).fill("absent");
+      const target = WORD.split("");
+      g = normalizeTurkish(g).split("");
+
+      for (let i = 0; i < 5; i++) {
+        if (g[i] === target[i]) {
+          res[i] = "correct";
+          target[i] = null;
+        }
+      }
+
+      for (let i = 0; i < 5; i++) {
+        if (res[i] !== "correct" && target.includes(g[i])) {
+          res[i] = "present";
+          target[target.indexOf(g[i])] = null;
+        }
+      }
+
       return res;
     }
 
-    function getResultMessage(count){
-      const shareLink="\nSen de oynamak istiyorsan: https://co2s2co2s2.github.io/duyuruwordle/";
-      let text="";
-      switch(count){
-        case 1:text="Duyuru Wordle’da ilk kelimeyi bir yazdım, çat diye çıktı😎";break;
-        case 2:text="Duyuru Wordle’ı iki tahminde bildim, muazzamım😁";break;
-        case 3:text="Duyuru Wordle ilkinde olmadı, ikincide olmadı, üçüncüde buldum😉";break;
-        case 4:text="Duyuru Wordle’ı dördüncü denemede buldum, fena sayılmam🙂";break;
-        case 5:text="Duyuru Wordle’ı beşinci denemede ancak bulabildim😅";break;
-        case 6:text="Duyuru Wordle’ı altıda zor bela çözdüm🤨";break;
-        default:text="Bugün Duyuru Wordle’ı maalesef çözemedim😢";break;
+    function getResultMessage(count) {
+      const link = " Sen de oynamak istiyorsan: https://co2s2co2s2.github.io/duyuruwordle/";
+
+      switch(count) {
+        case 1: return "Duyuru Wordle’da ilk kelimeyi bir yazdım, çat diye çıktı😎" + link;
+        case 2: return "Duyuru Wordle’ı iki tahminde bildim, muazzamım😁" + link;
+        case 3: return "Duyuru Wordle ilkinde olmadı, ikincide olmadı, üçüncüde buldum😉" + link;
+        case 4: return "Duyuru Wordle’ı dördüncü denemede buldum, fena sayılmam🙂" + link;
+        case 5: return "Duyuru Wordle’ı beşinci denemede ancak bulabildim😅" + link;
+        case 6: return "Duyuru Wordle’ı altıda zor bela çözdüm🤨" + link;
+        default: return "Bugün Duyuru Wordle’ı maalesef çözemedim😢" + link;
       }
-      return {display:text, share:text+shareLink};
     }
 
-    function showShareableResult(){
-      const modal=document.getElementById("resultModal");
-      const modalEmojis=document.getElementById("modalEmojis");
-      const modalMessage=document.getElementById("modalMessage");
-      const count=guesses.length;
-      const msgObj=getResultMessage(count);
+    function showShareableResult() {
+      const modal = document.getElementById("resultModal");
+      const modalEmojis = document.getElementById("modalEmojis");
+      const modalMessage = document.getElementById("modalMessage");
 
-      // Modalda sadece başlık
-      modalMessage.textContent = msgObj.display;
+      const count = guesses.length;
+      const msg = getResultMessage(count);
 
-      // Emoji grid
-      let out = "";
-      guesses.forEach(t=>{ out+=t.result.map(r=>r==="correct"?"🟩":r==="present"?"🟧":"⬛").join("")+"\n"; });
+      modalMessage.textContent = msg;
+
+      let out = `${msg}\n\n`;
+      guesses.forEach(t => {
+        out += t.result.map(r =>
+          r === "correct" ? "🟩" :
+          r === "present" ? "🟧" : "⬛"
+        ).join("") + "\n";
+      });
+
       modalEmojis.textContent = out;
-      modal.style.display="flex";
-      modal.setAttribute("aria-hidden","false");
+      modal.style.display = "flex";
+      modal.setAttribute("aria-hidden", "false");
 
-      // Kopyala butonu
-      document.getElementById("copyButton").onclick=()=>{
-        navigator.clipboard.writeText(msgObj.share+"\n\n"+out);
+      document.getElementById("copyButton").onclick = () => {
+        navigator.clipboard.writeText(out);
         alert("Sonuç kopyalandı!");
       };
 
-      // Dev mode button
-      const old=document.getElementById("devNewGameBtn"); if(old) old.remove();
-      if(DEV_MODE){
-        const btn=document.createElement("button"); btn.id="devNewGameBtn";
-        btn.textContent="Yeni oyun (Dev)"; btn.style.marginLeft="10px"; btn.style.padding="8px 12px";
-        btn.style.borderRadius="6px"; btn.style.border="none"; btn.style.cursor="pointer";
-        btn.onclick=()=>{ modal.style.display="none"; resetGame(); };
+      // Dev mode new game button
+      const old = document.getElementById("devNewGameBtn");
+      if (old) old.remove();
+
+      if (DEV_MODE) {
+        const btn = document.createElement("button");
+        btn.id = "devNewGameBtn";
+        btn.textContent = "Yeni oyun (Dev)";
+        btn.style.marginLeft = "10px";
+        btn.style.padding = "8px 12px";
+        btn.style.borderRadius = "6px";
+        btn.style.border = "none";
+        btn.style.cursor = "pointer";
+        btn.onclick = () => {
+          modal.style.display = "none";
+          resetGame();
+        };
         document.getElementById("copyButton").parentNode.appendChild(btn);
       }
     }
 
-    function saveResult(){ localStorage.setItem('duyuruWordlePlayed',JSON.stringify({date:new Date().toISOString().slice(0,10),result:guesses})); }
+    function saveResult() {
+      const today = new Date().toISOString().slice(0,10);
+      localStorage.setItem('duyuruWordlePlayed', JSON.stringify({
+        date: today,
+        result: guesses
+      }));
+    }
 
-    function checkIfPlayed(){
-      const played=JSON.parse(localStorage.getItem('duyuruWordlePlayed'));
-      const today=new Date().toISOString().slice(0,10);
-      if(played && played.date===today){
-        if(DEV_MODE) return false;
-        guesses=played.result;
-        guesses.forEach((t,r)=>{ t.guess.split("").forEach((ch,c)=>document.getElementById(`cell-${r}-${c}`).textContent=ch; document.getElementById(`cell-${r}-${c}`).classList.add(t.result[c]); }); 
-        document.querySelectorAll(".key").forEach(k=>k.disabled=true);
+    function checkIfPlayed() {
+      const played = JSON.parse(localStorage.getItem('duyuruWordlePlayed'));
+      const today = new Date().toISOString().slice(0,10);
+
+      if (played && played.date === today) {
+        if (DEV_MODE) return false;
+
+        guesses = played.result;
+
+        guesses.forEach((t, r) => {
+          t.guess.split("").forEach((ch, c) => {
+            const cell = document.getElementById(`cell-${r}-${c}`);
+            cell.textContent = ch;
+            cell.classList.add(t.result[c]);
+          });
+        });
+
+        document.querySelectorAll(".key").forEach(k => k.disabled = true);
         showShareableResult();
+
         return true;
       }
-      guesses=[];
+
+      guesses = [];
       return false;
     }
 
-    function resetGame(){
-      for(let r=0;r<6;r++){ for(let c=0;c<5;c++){ const cell=document.getElementById(`cell-${r}-${c}`); cell.textContent=""; cell.classList.remove("correct","present","absent"); } }
-      currentRow=0; currentCol=0; guesses=[];
-      document.querySelectorAll(".key").forEach(k=>k.disabled=false);
+    function resetGame() {
+      for (let r = 0; r < 6; r++) {
+        for (let c = 0; c < 5; c++) {
+          const cell = document.getElementById(`cell-${r}-${c}`);
+          cell.textContent = "";
+          cell.classList.remove("correct","present","absent");
+        }
+      }
+      currentRow = 0;
+      currentCol = 0;
+      guesses = [];
+
+      document.querySelectorAll(".key").forEach(k => k.disabled = false);
     }
 
-    function getDailyWord(){
-      if(!WORD_LIST.length) return null;
-      const now=new Date(); const utc=now.getTime()+now.getTimezoneOffset()*60000;
-      const ist=new Date(utc+3*60*60*1000);
-      const d=`${ist.getFullYear()}${String(ist.getMonth()+1).padStart(2,"0")}${String(ist.getDate()).padStart(2,"0")}`;
-      const h=parseInt(d);
+    function getDailyWord() {
+      if (!WORD_LIST.length) return null;
+      const now = new Date();
+      const utc = now.getTime() + now.getTimezoneOffset()*60000;
+      const ist = new Date(utc + 3*60*60*1000);
+      const d = `${ist.getFullYear()}${String(ist.getMonth()+1).padStart(2,"0")}${String(ist.getDate()).padStart(2,"0")}`;
+      const h = parseInt(d);
       return WORD_LIST[h % WORD_LIST.length];
     }
   </script>
