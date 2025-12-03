@@ -78,6 +78,11 @@
       font-size: 16px;
     }
 
+    .key:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
     /* Modal styling */
     .modal {
       display: none;
@@ -123,6 +128,22 @@
       border-radius: 4px;
     }
 
+    /* Dev-tag (geliştirici modu açıkken görünür) */
+    #devTag {
+      position: fixed;
+      right: 12px;
+      bottom: 12px;
+      background: #ffea00;
+      color: #000;
+      padding: 8px 10px;
+      font-weight: bold;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      display: none;
+      z-index: 2000;
+      cursor: pointer;
+    }
+
     @media (max-width: 400px) {
       .row { gap: 5px; }
       .key { font-size: 14px; min-width: 28px; max-width: 36px; }
@@ -133,22 +154,46 @@
 <body>
 
   <div>
-    <h1>Duyuru Word1e</h1>
+    <h1>Duyuru Wordle</h1>
     <div class="board" id="board"></div>
     <div class="keyboard" id="keyboard"></div>
   </div>
 
   <!-- Modal -->
-  <div id="resultModal" class="modal">
+  <div id="resultModal" class="modal" aria-hidden="true">
     <div class="modal-content" id="modalContent">
-      <span id="modalClose">&times;</span>
+      <span id="modalClose" title="Kapat">&times;</span>
       <div id="modalMessage" style="font-weight:bold;margin-bottom:10px;">Tebrikler bildin!</div>
       <pre id="modalEmojis" style="white-space: pre-wrap; font-size: 18px; text-align:center;"></pre>
-      <button id="copyButton">Kopyala</button>
+      <div style="margin-top:12px;">
+        <button id="copyButton">Kopyala</button>
+      </div>
     </div>
   </div>
 
+  <!-- Dev tag (görünürse devMode açık demektir) -->
+  <div id="devTag" title="Dev mode açık — tıklayarak kapat">DEV MODE</div>
+
   <script>
+    // --------------------------
+    // DEV MODE: nasıl kullanılır?
+    // --------------------------
+    // Konsolda çalıştır:
+    // localStorage.setItem('duyuruDevMode','true'); location.reload();
+    // dev modunu kapatmak:
+    // localStorage.removeItem('duyuruDevMode'); location.reload();
+    //
+    // Ayrıca konsol fonksiyonları:
+    // enableDevMode(), disableDevMode(), resetToday()
+    // --------------------------
+
+    const DEV_MODE = localStorage.getItem('duyuruDevMode') === 'true';
+
+    // Konsol yardımcıları
+    window.enableDevMode = () => { localStorage.setItem('duyuruDevMode','true'); console.log('Dev mode enabled. Reloading...'); location.reload(); };
+    window.disableDevMode = () => { localStorage.removeItem('duyuruDevMode'); console.log('Dev mode disabled. Reloading...'); location.reload(); };
+    window.resetToday = () => { localStorage.removeItem('duyuruWordlePlayed'); console.log('Today reset. Reloading...'); location.reload(); };
+
     let WORD_LIST = [];
     let WORD = null;
     let currentRow = 0;
@@ -172,10 +217,11 @@
       .then(list => {
         WORD_LIST = list.map(k => normalizeTurkish(k.trim()));
         WORD = getDailyWord();
-        checkIfPlayed();
+        init();
       })
       .catch(err => console.error("Kelime listesi yüklenemedi:", err));
 
+    // Board oluşturma
     const board = document.getElementById("board");
     for (let r = 0; r < 6; r++) {
       const row = document.createElement("div");
@@ -189,6 +235,7 @@
       board.appendChild(row);
     }
 
+    // Klavye oluşturma
     const keys = [
       ["Q","W","E","R","T","Y","U","I","O","P","Ğ","Ü"],
       ["A","S","D","F","G","H","J","K","L","Ş","İ"],
@@ -208,7 +255,41 @@
       keyboard.appendChild(rowDiv);
     });
 
+    function init() {
+      // Eğer dev mode açık ise, görsel tag göster
+      const devTag = document.getElementById('devTag');
+      if (DEV_MODE) {
+        devTag.style.display = 'block';
+        devTag.onclick = () => { // tıklayınca kapatmak kolay olsun
+          disableDevMode();
+        };
+      } else {
+        devTag.style.display = 'none';
+      }
+
+      // kontrol: aynı gün oynandı mı? (dev mode kapalıysa engelle)
+      if (!checkIfPlayed() || DEV_MODE) {
+        // Oyun başlatılabilir (dev mode açıksa override ile izin verilir)
+        // Eğer dev mode açık ve daha önce oynandıysa, eski sonucu göstermeyip yeni oyun başlat
+        if (DEV_MODE) {
+          resetGame();
+        }
+      }
+
+      // Modal X kapatma
+      document.getElementById("modalClose").onclick = () => {
+        document.getElementById("resultModal").style.display = "none";
+      };
+    }
+
+    // KEY HANDLING
     function handleKey(key) {
+      // Eğer klavye pasifse (normal mod ve oyun önceden oynanmış) engelle
+      if (!DEV_MODE) {
+        // kontrol: eğer oynandıysa klavye disabled attribute ile zaten pasif
+        // burada ekstra kontrol gerekmiyor
+      }
+
       key = normalizeTurkish(key);
       const validChars = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZX";
 
@@ -258,9 +339,15 @@
 
       guesses.push({ guess: guessWord, result });
 
-      if (result.every(r => r === "correct") || currentRow === 5) {
+      // Eğer dev mode açık ise kaydetme yapma (ana kaydı bozmamak için)
+      if (!DEV_MODE) {
         saveResult();
+      }
+
+      // Modal göster (oyun bittiğinde ya da son denemede)
+      if (result.every(r => r === "correct") || currentRow === 5) {
         showShareableResult();
+        // Eğer dev moddaysan, modal'da "Yeni oyun (Dev)" butonu görünecek ve oyun devam ettirilebilir
         return;
       }
 
@@ -302,15 +389,18 @@
       }
     }
 
+    // Modal ve paylaşım
     function showShareableResult() {
       const modal = document.getElementById("resultModal");
       const modalEmojis = document.getElementById("modalEmojis");
       const modalMessage = document.getElementById("modalMessage");
 
       const count = guesses.length;
-      modalMessage.textContent = getResultMessage(count);
+      // Mesajın ilk harfi büyük, geri normal (getResultMessage already formatted roughly)
+      const msg = getResultMessage(count);
+      modalMessage.textContent = msg;
 
-      let output = `${modalMessage.textContent}\n\n`;
+      let output = `${msg}\n\n`;
       guesses.forEach(t => {
         let line = "";
         t.result.forEach(r => {
@@ -323,6 +413,7 @@
 
       modalEmojis.textContent = output;
       modal.style.display = "flex";
+      modal.setAttribute('aria-hidden', 'false');
 
       // Kopyala butonu
       const copyBtn = document.getElementById("copyButton");
@@ -330,6 +421,29 @@
         navigator.clipboard.writeText(output);
         alert("Sonuç kopyalandı!");
       };
+
+      // Eğer dev mode aktifse modal'a "Yeni oyun (Dev)" butonu ekle
+      // (önce varsa kaldır)
+      const existingNewBtn = document.getElementById('devNewGameBtn');
+      if (existingNewBtn) existingNewBtn.remove();
+
+      if (DEV_MODE) {
+        const btn = document.createElement('button');
+        btn.id = 'devNewGameBtn';
+        btn.textContent = 'Yeni oyun (Dev)';
+        btn.style.marginLeft = '10px';
+        btn.style.padding = '8px 12px';
+        btn.style.borderRadius = '6px';
+        btn.style.border = 'none';
+        btn.style.cursor = 'pointer';
+        btn.onclick = () => {
+          // modal kapat, oyun sıfırla
+          modal.style.display = 'none';
+          resetGame();
+        };
+        // place next to copyBtn
+        copyBtn.parentNode.appendChild(btn);
+      }
     }
 
     function saveResult() {
@@ -337,11 +451,17 @@
       localStorage.setItem('duyuruWordlePlayed', JSON.stringify({ date: today, result: guesses }));
     }
 
+    // Eğer aynı gün oynandıysa: önceki tahminleri göster ve klavyeyi pasif yap
     function checkIfPlayed() {
       const played = JSON.parse(localStorage.getItem('duyuruWordlePlayed'));
       const today = new Date().toISOString().slice(0,10);
 
       if (played && played.date === today) {
+        if (DEV_MODE) {
+          // Dev modunda önceki sonucu göstermiyoruz; kullanıcı yeni oyun oynasın
+          return false;
+        }
+
         guesses = played.result;
 
         // Board'u eski tahminlerle doldur
@@ -367,6 +487,25 @@
       return false;
     }
 
+    function resetGame() {
+      // Sıfırla board ve değişkenler
+      for (let r = 0; r < 6; r++) {
+        for (let c = 0; c < 5; c++) {
+          const cell = document.getElementById(`cell-${r}-${c}`);
+          cell.textContent = "";
+          cell.classList.remove('correct','present','absent');
+        }
+      }
+      currentRow = 0;
+      currentCol = 0;
+      guesses = [];
+
+      // Enable keyboard buttons
+      const keys = document.querySelectorAll(".key");
+      keys.forEach(k => k.disabled = false);
+    }
+
+    // Basit günlük kelime seçimi (senin eski mantık)
     function getDailyWord() {
       if (!WORD_LIST || WORD_LIST.length === 0) return null;
       const now = new Date();
@@ -380,11 +519,14 @@
       return WORD_LIST[index];
     }
 
-    // Modal close X
-    document.getElementById("modalClose").onclick = () => {
-      document.getElementById("resultModal").style.display = "none";
+    // yardımcı: disableDevMode fonksiyonu (sayfa içinde kullanılır)
+    function disableDevMode() {
+      localStorage.removeItem('duyuruDevMode');
+      location.reload();
     }
 
+    // Başlangıç: init() çağrıldıktan sonra hazır
+    // (init(), fetch.then içinde çağrılıyor)
   </script>
 </body>
 </html>
