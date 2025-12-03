@@ -11,3 +11,6 @@ klavyede harflerin tahminlere göre renklendirilmesi
 oyuna aynı gün tekrar girince, tahminlerin aynen görünmesi
 
 oyuna aynı gün tekrar girince, kopyalanan başarı mesajının üst üste saymaması
+
+İstersen “cache-busting” için build numarası ekleyen küçük bir mekanizma da koyabiliriz.
+Yani her deploy’da yeni sürüm otomatik yüklenir, cache sorunları ortadan kalkar.
