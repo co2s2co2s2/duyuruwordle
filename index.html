@@ -156,7 +156,7 @@
 <body>
 
   <div>
-    <h1>Duyuru Wordle 0.3</h1>
+    <h1>Duyuru Wordle 0.4</h1>
     <div class="board" id="board"></div>
     <div class="keyboard" id="keyboard"></div>
   </div>
@@ -210,7 +210,6 @@
         .toUpperCase();
     }
 
-    // Günlük kelime
     async function getDailyWord() {
       if (!WORD_LIST.length) return null;
 
@@ -227,7 +226,6 @@
       return WORD_LIST[index];
     }
 
-    // Words load
     fetch("words.json")
       .then(res => res.json())
       .then(async list => {
@@ -240,7 +238,6 @@
       })
       .catch(err => console.error("Kelime listesi yüklenemedi:", err));
 
-    // Build board
     const board = document.getElementById("board");
     for (let r = 0; r < 6; r++) {
       const row = document.createElement("div");
@@ -254,7 +251,6 @@
       board.appendChild(row);
     }
 
-    // Keyboard
     const keys = [
       ["Q","W","E","R","T","Y","U","I","O","P","Ğ","Ü"],
       ["A","S","D","F","G","H","J","K","L","Ş","İ"],
@@ -322,7 +318,6 @@
       const keyBtn = document.querySelector(`.key[data-key="${letter}"]`);
       if (!keyBtn) return;
 
-      // Öncelik: correct > present > absent
       if (state === "correct") {
         keyBtn.classList.remove("present", "absent");
         keyBtn.classList.add("correct");
@@ -363,7 +358,7 @@
       result.forEach((r, c) => {
         const cell = document.getElementById(`cell-${currentRow}-${c}`);
         cell.classList.add(r);
-        updateKeyboard(guess[c], r);   // 🔥 Klavye renklendirme
+        updateKeyboard(guess[c], r);
       });
 
       guesses.push({ guess: guessWord, result });
@@ -384,7 +379,6 @@
       const target = WORD.split("");
       g = normalizeTurkish(g).split("");
 
-      // correct
       for (let i = 0; i < 5; i++) {
         if (g[i] === target[i]) {
           res[i] = "correct";
@@ -392,412 +386,6 @@
         }
       }
 
-      // present
-      for (let i = 0; i < 5; i++) {
-        if (res[i] !== "correct" && target.includes(g[i])) {
-          res[i] = "present";
-          target[target.indexOf(g[i])] = null;
-        }
-      }
-
-      return res;
-    }
-
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Duyuru Wordle</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #fafafa;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      flex-direction: column;
-    }
-
-    .board {
-      display: grid;
-      grid-template-rows: repeat(6, 1fr);
-      gap: 10px;
-      justify-items: center;
-      width: 100%;
-    }
-
-    .row {
-      display: grid;
-      grid-template-columns: repeat(5, 60px);
-      gap: 10px;
-    }
-
-    .cell {
-      width: 60px;
-      height: 60px;
-      border: 2px solid #ccc;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 32px;
-      font-weight: bold;
-      text-transform: uppercase;
-      background: white;
-    }
-
-    .correct { background: #6aaa64; color: white; }
-    .present { background: #c9b458; color: white; }
-    .absent { background: #787c7e; color: white; }
-
-    .keyboard {
-      margin-top: 20px;
-      text-align: center;
-      width: 100%;
-      max-width: 480px;
-      padding: 0 10px;
-      box-sizing: border-box;
-    }
-
-    .keyboard div {
-      display: flex;
-      flex-wrap: nowrap;
-      justify-content: center;
-      margin-bottom: 5px;
-    }
-
-    .key {
-      padding: 10px 0;
-      margin: 2px;
-      min-width: 32px;
-      flex: 1 1 auto;
-      max-width: 48px;
-      text-align: center;
-      font-weight: bold;
-      border-radius: 4px;
-      border: none;
-      background: #ddd;
-      cursor: pointer;
-      font-size: 16px;
-    }
-
-    .key.correct { background: #6aaa64 !important; color: white; }
-    .key.present { background: #c9b458 !important; color: white; }
-    .key.absent { background: #787c7e !important; color: white; }
-
-    .key:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background-color: rgba(0,0,0,0.5);
-      justify-content: center;
-      align-items: center;
-    }
-
-    .modal-content {
-      background-color: #fefefe;
-      padding: 20px;
-      border-radius: 8px;
-      text-align: center;
-      max-width: 400px;
-      width: 90%;
-      position: relative;
-    }
-
-    #modalClose {
-      position: absolute;
-      top: 10px;
-      right: 15px;
-      cursor: pointer;
-      font-size: 24px;
-      font-weight: bold;
-    }
-
-    #copyButton {
-      margin-top: 15px;
-      padding: 8px 16px;
-      font-size: 16px;
-      cursor: pointer;
-      border: none;
-      background-color: #6aaa64;
-      color: white;
-      border-radius: 4px;
-    }
-
-    #devTag {
-      position: fixed;
-      right: 12px;
-      bottom: 12px;
-      background: #ffea00;
-      color: #000;
-      padding: 8px 10px;
-      font-weight: bold;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      display: none;
-      z-index: 2000;
-      cursor: pointer;
-    }
-
-    @media (max-width: 400px) {
-      .row { gap: 5px; }
-      .key { font-size: 14px; min-width: 28px; max-width: 36px; }
-      #copyButton { font-size: 14px; }
-    }
-  </style>
-</head>
-<body>
-
-  <div>
-    <h1>Duyuru Wordle 0.2</h1>
-    <div class="board" id="board"></div>
-    <div class="keyboard" id="keyboard"></div>
-  </div>
-
-  <div id="resultModal" class="modal" aria-hidden="true">
-    <div class="modal-content" id="modalContent">
-      <span id="modalClose" title="Kapat">&times;</span>
-      <div id="modalMessage" style="font-weight:bold;margin-bottom:10px;">Tebrikler bildin!</div>
-      <pre id="modalEmojis" style="white-space: pre-wrap; font-size: 18px; text-align:center;"></pre>
-      <div style="margin-top:12px;">
-        <button id="copyButton">Kopyala</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="devTag" title="Dev mode açık — tıklayarak kapat">DEV MODE</div>
-
-  <script>
-    const DEV_MODE = localStorage.getItem('duyuruDevMode') === 'true';
-
-    window.enableDevMode = () => {
-      localStorage.setItem('duyuruDevMode','true');
-      location.reload();
-    };
-
-    window.disableDevMode = () => {
-      localStorage.removeItem('duyuruDevMode');
-      location.reload();
-    };
-
-    window.resetToday = () => {
-      localStorage.removeItem('duyuruWordlePlayed');
-      location.reload();
-    };
-
-    let WORD_LIST = [];
-    let WORD = null;
-    let currentRow = 0;
-    let currentCol = 0;
-    let guesses = [];
-
-    function normalizeTurkish(str) {
-      return str
-        .replace(/i/g, 'İ')
-        .replace(/ı/g, 'I')
-        .replace(/ş/g, 'Ş')
-        .replace(/ç/g, 'Ç')
-        .replace(/ü/g, 'Ü')
-        .replace(/ö/g, 'Ö')
-        .replace(/ğ/g, 'Ğ')
-        .toUpperCase();
-    }
-
-    // Günlük kelime
-    async function getDailyWord() {
-      if (!WORD_LIST.length) return null;
-
-      const now = new Date();
-      const tr = new Date(now.getTime() + (3 * 60 * 60 * 1000));
-      const dateStr = `${tr.getFullYear()}-${String(tr.getMonth()+1).padStart(2,"0")}-${String(tr.getDate()).padStart(2,"0")}`;
-
-      const encoder = new TextEncoder();
-      const data = encoder.encode(dateStr);
-      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const index = hashArray.reduce((acc, v) => (acc * 31 + v) % WORD_LIST.length, 0);
-
-      return WORD_LIST[index];
-    }
-
-    // Words load
-    fetch("words.json")
-      .then(res => res.json())
-      .then(async list => {
-        WORD_LIST = list.map(k => normalizeTurkish(k.trim()));
-        WORD = await getDailyWord();
-
-        if (DEV_MODE) console.log("Bugünün kelimesi:", WORD);
-
-        init();
-      })
-      .catch(err => console.error("Kelime listesi yüklenemedi:", err));
-
-    // Build board
-    const board = document.getElementById("board");
-    for (let r = 0; r < 6; r++) {
-      const row = document.createElement("div");
-      row.classList.add("row");
-      for (let c = 0; c < 5; c++) {
-        const cell = document.createElement("div");
-        cell.classList.add("cell");
-        cell.id = `cell-${r}-${c}`;
-        row.appendChild(cell);
-      }
-      board.appendChild(row);
-    }
-
-    // Keyboard
-    const keys = [
-      ["Q","W","E","R","T","Y","U","I","O","P","Ğ","Ü"],
-      ["A","S","D","F","G","H","J","K","L","Ş","İ"],
-      ["ENTER","Z","X","C","V","B","N","M","Ö","Ç","DEL"]
-    ];
-
-    const keyboard = document.getElementById("keyboard");
-    keys.forEach(rowKeys => {
-      const rowDiv = document.createElement("div");
-      rowKeys.forEach(k => {
-        const btn = document.createElement("button");
-        btn.textContent = k;
-        btn.classList.add("key");
-        btn.setAttribute("data-key", normalizeTurkish(k));
-        btn.onclick = () => handleKey(k);
-        rowDiv.appendChild(btn);
-      });
-      keyboard.appendChild(rowDiv);
-    });
-
-    function init() {
-      const devTag = document.getElementById('devTag');
-      if (DEV_MODE) {
-        devTag.style.display = 'block';
-        devTag.onclick = () => disableDevMode();
-      }
-
-      if (!checkIfPlayed() || DEV_MODE) {
-        if (DEV_MODE) resetGame();
-      }
-
-      document.getElementById("modalClose").onclick = () => {
-        document.getElementById("resultModal").style.display = "none";
-      };
-    }
-
-    function handleKey(key) {
-      key = normalizeTurkish(key);
-      const valid = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZX";
-
-      if (key === "DEL") return deleteLetter();
-      if (key === "ENTER") return submitRow();
-      if (!valid.includes(key)) return;
-
-      if (currentCol < 5) {
-        const cell = document.getElementById(`cell-${currentRow}-${currentCol}`);
-        cell.textContent = key;
-        currentCol++;
-      }
-    }
-
-    function deleteLetter() {
-      if (currentCol > 0) {
-        currentCol--;
-        const cell = document.getElementById(`cell-${currentRow}-${currentCol}`);
-        cell.textContent = "";
-      }
-    }
-
-    function isValidWord(g) {
-      return WORD_LIST.includes(normalizeTurkish(g));
-    }
-
-    function updateKeyboard(letter, state) {
-      const keyBtn = document.querySelector(`.key[data-key="${letter}"]`);
-      if (!keyBtn) return;
-
-      // Öncelik: correct > present > absent
-      if (state === "correct") {
-        keyBtn.classList.remove("present", "absent");
-        keyBtn.classList.add("correct");
-        return;
-      }
-
-      if (state === "present") {
-        if (!keyBtn.classList.contains("correct")) {
-          keyBtn.classList.remove("absent");
-          keyBtn.classList.add("present");
-        }
-        return;
-      }
-
-      if (state === "absent") {
-        if (!keyBtn.classList.contains("correct") && !keyBtn.classList.contains("present")) {
-          keyBtn.classList.add("absent");
-        }
-      }
-    }
-
-    function submitRow() {
-      if (currentCol < 5) return;
-
-      const guess = [];
-      for (let c = 0; c < 5; c++) {
-        guess.push(document.getElementById(`cell-${currentRow}-${c}`).textContent);
-      }
-      const guessWord = guess.join("");
-
-      if (!isValidWord(guessWord)) {
-        alert("Geçersiz kelime!");
-        return;
-      }
-
-      const result = checkGuess(guessWord);
-
-      result.forEach((r, c) => {
-        const cell = document.getElementById(`cell-${currentRow}-${c}`);
-        cell.classList.add(r);
-        updateKeyboard(guess[c], r);   // 🔥 Klavye renklendirme
-      });
-
-      guesses.push({ guess: guessWord, result });
-
-      if (!DEV_MODE) saveResult();
-
-      if (result.every(r => r === "correct") || currentRow === 5) {
-        showShareableResult();
-        return;
-      }
-
-      currentRow++;
-      currentCol = 0;
-    }
-
-    function checkGuess(g) {
-      const res = Array(5).fill("absent");
-      const target = WORD.split("");
-      g = normalizeTurkish(g).split("");
-
-      // correct
-      for (let i = 0; i < 5; i++) {
-        if (g[i] === target[i]) {
-          res[i] = "correct";
-          target[i] = null;
-        }
-      }
-
-      // present
       for (let i = 0; i < 5; i++) {
         if (res[i] !== "correct" && target.includes(g[i])) {
           res[i] = "present";
@@ -818,7 +406,9 @@
         case 4: return "Duyuru Wordle’ı dördüncü denemede buldum, fena sayılmam🙂" + link;
         case 5: return "Duyuru Wordle’ı beşinci denemede ancak bulabildim😅" + link;
         case 6: return "Duyuru Wordle’ı altıda zor bela çözdüm🤨" + link;
-        default: return "Bugün Duyuru Wordle’ı maalesef çözemedim😢" + link;
+
+        default:
+          return "Sercan en sonunda hiç bulamayana “bulamadın” demeyi becermiş";
       }
     }
 
@@ -887,7 +477,7 @@
             const cell = document.getElementById(`cell-${r}-${c}`);
             cell.textContent = ch;
             cell.classList.add(t.result[c]);
-            updateKeyboard(ch, t.result[c]);   // 🔥 geçmiş oyunda da renkleri geri yükle
+            updateKeyboard(ch, t.result[c]);
           });
         });
 
@@ -913,108 +503,6 @@
       currentCol = 0;
       guesses = [];
 
-      // Klavyeyi resetle
-      document.querySelectorAll(".key").forEach(k => {
-        k.classList.remove("correct","present","absent");
-        k.disabled = false;
-      });
-    }
-
-  </script>
-</body>
-</html>
-    function showShareableResult() {
-      const modal = document.getElementById("resultModal");
-      const modalEmojis = document.getElementById("modalEmojis");
-      const modalMessage = document.getElementById("modalMessage");
-
-      const count = guesses.length;
-      const msg = getResultMessage(count);
-
-      modalMessage.textContent = msg;
-
-      let out = `${msg}\n\n`;
-      guesses.forEach(t => {
-        out += t.result.map(r =>
-          r === "correct" ? "🟩" :
-          r === "present" ? "🟧" : "⬛"
-        ).join("") + "\n";
-      });
-
-      modalEmojis.textContent = out;
-      modal.style.display = "flex";
-      modal.setAttribute("aria-hidden", "false");
-
-      document.getElementById("copyButton").onclick = () => {
-        navigator.clipboard.writeText(out);
-        alert("Sonuç kopyalandı!");
-      };
-
-      const old = document.getElementById("devNewGameBtn");
-      if (old) old.remove();
-
-      if (DEV_MODE) {
-        const btn = document.createElement("button");
-        btn.id = "devNewGameBtn";
-        btn.textContent = "Yeni oyun (Dev)";
-        btn.style.marginLeft = "10px";
-        btn.onclick = () => {
-          modal.style.display = "none";
-          resetGame();
-        };
-        document.getElementById("copyButton").parentNode.appendChild(btn);
-      }
-    }
-
-    function saveResult() {
-      const today = new Date().toISOString().slice(0,10);
-      localStorage.setItem('duyuruWordlePlayed', JSON.stringify({
-        date: today,
-        result: guesses
-      }));
-    }
-
-    function checkIfPlayed() {
-      const played = JSON.parse(localStorage.getItem('duyuruWordlePlayed'));
-      const today = new Date().toISOString().slice(0,10);
-
-      if (played && played.date === today) {
-        if (DEV_MODE) return false;
-
-        guesses = played.result;
-
-        guesses.forEach((t, r) => {
-          t.guess.split("").forEach((ch, c) => {
-            const cell = document.getElementById(`cell-${r}-${c}`);
-            cell.textContent = ch;
-            cell.classList.add(t.result[c]);
-            updateKeyboard(ch, t.result[c]);   // 🔥 geçmiş oyunda da renkleri geri yükle
-          });
-        });
-
-        document.querySelectorAll(".key").forEach(k => k.disabled = true);
-        showShareableResult();
-
-        return true;
-      }
-
-      guesses = [];
-      return false;
-    }
-
-    function resetGame() {
-      for (let r = 0; r < 6; r++) {
-        for (let c = 0; c < 5; c++) {
-          const cell = document.getElementById(`cell-${r}-${c}`);
-          cell.textContent = "";
-          cell.classList.remove("correct","present","absent");
-        }
-      }
-      currentRow = 0;
-      currentCol = 0;
-      guesses = [];
-
-      // Klavyeyi resetle
       document.querySelectorAll(".key").forEach(k => {
         k.classList.remove("correct","present","absent");
         k.disabled = false;
