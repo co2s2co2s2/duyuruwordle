@@ -83,7 +83,6 @@
       cursor: not-allowed;
     }
 
-    /* Modal */
     .modal {
       display: none;
       position: fixed;
@@ -128,7 +127,6 @@
       border-radius: 4px;
     }
 
-    /* Dev Mode Tag */
     #devTag {
       position: fixed;
       right: 12px;
@@ -154,12 +152,11 @@
 <body>
 
   <div>
-    <h1>Duyuru Wordle</h1>
+    <h1>Duyuru Wordle0.1</h1>
     <div class="board" id="board"></div>
     <div class="keyboard" id="keyboard"></div>
   </div>
 
-  <!-- Modal -->
   <div id="resultModal" class="modal" aria-hidden="true">
     <div class="modal-content" id="modalContent">
       <span id="modalClose" title="Kapat">&times;</span>
@@ -171,31 +168,23 @@
     </div>
   </div>
 
-  <!-- Dev Tag -->
   <div id="devTag" title="Dev mode açık — tıklayarak kapat">DEV MODE</div>
 
   <script>
-    // --------------------------
-    // DEV MODE
-    // --------------------------
-
     const DEV_MODE = localStorage.getItem('duyuruDevMode') === 'true';
 
     window.enableDevMode = () => {
       localStorage.setItem('duyuruDevMode','true');
-      console.log('Dev mode enabled. Reloading...');
       location.reload();
     };
 
     window.disableDevMode = () => {
       localStorage.removeItem('duyuruDevMode');
-      console.log('Dev mode disabled. Reloading...');
       location.reload();
     };
 
     window.resetToday = () => {
       localStorage.removeItem('duyuruWordlePlayed');
-      console.log('Today reset. Reloading...');
       location.reload();
     };
 
@@ -217,16 +206,39 @@
         .toUpperCase();
     }
 
+    // --- GÜNLÜK RASTGELE KELİME (deterministik + TR saati) ---
+    async function getDailyWord() {
+      if (!WORD_LIST.length) return null;
+
+      const now = new Date();
+      const tr = new Date(now.getTime() + (3 * 60 * 60 * 1000));
+
+      const dateStr = `${tr.getFullYear()}-${String(tr.getMonth()+1).padStart(2,"0")}-${String(tr.getDate()).padStart(2,"0")}`;
+
+      const encoder = new TextEncoder();
+      const data = encoder.encode(dateStr);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+
+      const index = hashArray.reduce((acc, v) => (acc * 31 + v) % WORD_LIST.length, 0);
+
+      return WORD_LIST[index];
+    }
+
+    // Fetch words and start
     fetch("words.json")
       .then(res => res.json())
-      .then(list => {
+      .then(async list => {
         WORD_LIST = list.map(k => normalizeTurkish(k.trim()));
-        WORD = getDailyWord();
+        WORD = await getDailyWord();
+
+        if (DEV_MODE) console.log("Bugünün kelimesi:", WORD);
+
         init();
       })
       .catch(err => console.error("Kelime listesi yüklenemedi:", err));
 
-    // Board
+    // Board builder
     const board = document.getElementById("board");
     for (let r = 0; r < 6; r++) {
       const row = document.createElement("div");
@@ -240,7 +252,7 @@
       board.appendChild(row);
     }
 
-    // Klavye
+    // Keyboard
     const keys = [
       ["Q","W","E","R","T","Y","U","I","O","P","Ğ","Ü"],
       ["A","S","D","F","G","H","J","K","L","Ş","İ"],
@@ -276,7 +288,6 @@
       };
     }
 
-    // Key handling
     function handleKey(key) {
       key = normalizeTurkish(key);
       const valid = "ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZX";
@@ -325,9 +336,7 @@
 
       guesses.push({ guess: guessWord, result });
 
-      if (!DEV_MODE) {
-        saveResult();
-      }
+      if (!DEV_MODE) saveResult();
 
       if (result.every(r => r === "correct") || currentRow === 5) {
         showShareableResult();
@@ -401,7 +410,6 @@
         alert("Sonuç kopyalandı!");
       };
 
-      // Dev mode new game button
       const old = document.getElementById("devNewGameBtn");
       if (old) old.remove();
 
@@ -410,10 +418,6 @@
         btn.id = "devNewGameBtn";
         btn.textContent = "Yeni oyun (Dev)";
         btn.style.marginLeft = "10px";
-        btn.style.padding = "8px 12px";
-        btn.style.borderRadius = "6px";
-        btn.style.border = "none";
-        btn.style.cursor = "pointer";
         btn.onclick = () => {
           modal.style.display = "none";
           resetGame();
@@ -472,15 +476,6 @@
       document.querySelectorAll(".key").forEach(k => k.disabled = false);
     }
 
-    function getDailyWord() {
-      if (!WORD_LIST.length) return null;
-      const now = new Date();
-      const utc = now.getTime() + now.getTimezoneOffset()*60000;
-      const ist = new Date(utc + 3*60*60*1000);
-      const d = `${ist.getFullYear()}${String(ist.getMonth()+1).padStart(2,"0")}${String(ist.getDate()).padStart(2,"0")}`;
-      const h = parseInt(d);
-      return WORD_LIST[h % WORD_LIST.length];
-    }
   </script>
 </body>
 </html>
