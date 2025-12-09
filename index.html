@@ -156,7 +156,7 @@
 <body>
 
   <div>
-    <h1>Duyuru Wordle 0.4</h1>
+    <h1>Duyuru Wordle 0.5</h1>
     <div class="board" id="board"></div>
     <div class="keyboard" id="keyboard"></div>
   </div>
@@ -164,7 +164,7 @@
   <div id="resultModal" class="modal" aria-hidden="true">
     <div class="modal-content" id="modalContent">
       <span id="modalClose" title="Kapat">&times;</span>
-      <div id="modalMessage" style="font-weight:bold;margin-bottom:10px;">Tebrikler bildin!</div>
+      <div id="modalMessage" style="font-weight:bold;margin-bottom:10px;">Tebrikler!</div>
       <pre id="modalEmojis" style="white-space: pre-wrap; font-size: 18px; text-align:center;"></pre>
       <div style="margin-top:12px;">
         <button id="copyButton">Kopyala</button>
@@ -210,6 +210,7 @@
         .toUpperCase();
     }
 
+    // Günlük kelime
     async function getDailyWord() {
       if (!WORD_LIST.length) return null;
 
@@ -226,6 +227,7 @@
       return WORD_LIST[index];
     }
 
+    // Kelimeleri yükle
     fetch("words.json")
       .then(res => res.json())
       .then(async list => {
@@ -238,6 +240,7 @@
       })
       .catch(err => console.error("Kelime listesi yüklenemedi:", err));
 
+    // Tahta kur
     const board = document.getElementById("board");
     for (let r = 0; r < 6; r++) {
       const row = document.createElement("div");
@@ -251,6 +254,7 @@
       board.appendChild(row);
     }
 
+    // Klavye
     const keys = [
       ["Q","W","E","R","T","Y","U","I","O","P","Ğ","Ü"],
       ["A","S","D","F","G","H","J","K","L","Ş","İ"],
@@ -396,6 +400,7 @@
       return res;
     }
 
+    // 🔥 Burada HATA DÜZELTİLDİ
     function getResultMessage(count) {
       const link = " Sen de oynamak istiyorsan: https://co2s2co2s2.github.io/duyuruwordle/";
 
@@ -412,16 +417,26 @@
       }
     }
 
+    // 🔥 TAMAMEN DÜZELTİLMİŞ SÜRÜM
     function showShareableResult() {
       const modal = document.getElementById("resultModal");
       const modalEmojis = document.getElementById("modalEmojis");
       const modalMessage = document.getElementById("modalMessage");
 
-      const count = guesses.length;
-      const msg = getResultMessage(count);
+      // Kullanıcı kazandı mı?
+      const winIndex = guesses.findIndex(g => g.result.every(r => r === "correct"));
+      const won = winIndex !== -1;
+
+      // Kazandıysa kaçıncı deneme?
+      const count = won ? (winIndex + 1) : guesses.length;
+
+      // Kaybettiyse özel mesaj
+      const failText = "Sercan en sonunda hiç bulamayana “bulamadın” demeyi becermiş";
+      const msg = won ? getResultMessage(count) : failText;
 
       modalMessage.textContent = msg;
 
+      // Kopyalanacak metin
       let out = `${msg}\n\n`;
       guesses.forEach(t => {
         out += t.result.map(r =>
