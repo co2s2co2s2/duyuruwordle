@@ -78,6 +78,10 @@
       font-size: 16px;
     }
 
+    .key.correct { background: #6aaa64 !important; color: white; }
+    .key.present { background: #c9b458 !important; color: white; }
+    .key.absent { background: #787c7e !important; color: white; }
+
     .key:disabled {
       opacity: 0.6;
       cursor: not-allowed;
@@ -152,7 +156,7 @@
 <body>
 
   <div>
-    <h1>Duyuru Wordle0.1</h1>
+    <h1>Duyuru Wordle0.2</h1>
     <div class="board" id="board"></div>
     <div class="keyboard" id="keyboard"></div>
   </div>
@@ -206,26 +210,24 @@
         .toUpperCase();
     }
 
-    // --- GÜNLÜK RASTGELE KELİME (deterministik + TR saati) ---
+    // Günlük kelime
     async function getDailyWord() {
       if (!WORD_LIST.length) return null;
 
       const now = new Date();
       const tr = new Date(now.getTime() + (3 * 60 * 60 * 1000));
-
       const dateStr = `${tr.getFullYear()}-${String(tr.getMonth()+1).padStart(2,"0")}-${String(tr.getDate()).padStart(2,"0")}`;
 
       const encoder = new TextEncoder();
       const data = encoder.encode(dateStr);
       const hashBuffer = await crypto.subtle.digest("SHA-256", data);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
-
       const index = hashArray.reduce((acc, v) => (acc * 31 + v) % WORD_LIST.length, 0);
 
       return WORD_LIST[index];
     }
 
-    // Fetch words and start
+    // Words load
     fetch("words.json")
       .then(res => res.json())
       .then(async list => {
@@ -238,7 +240,7 @@
       })
       .catch(err => console.error("Kelime listesi yüklenemedi:", err));
 
-    // Board builder
+    // Build board
     const board = document.getElementById("board");
     for (let r = 0; r < 6; r++) {
       const row = document.createElement("div");
@@ -266,6 +268,7 @@
         const btn = document.createElement("button");
         btn.textContent = k;
         btn.classList.add("key");
+        btn.setAttribute("data-key", normalizeTurkish(k));
         btn.onclick = () => handleKey(k);
         rowDiv.appendChild(btn);
       });
@@ -315,6 +318,32 @@
       return WORD_LIST.includes(normalizeTurkish(g));
     }
 
+    function updateKeyboard(letter, state) {
+      const keyBtn = document.querySelector(`.key[data-key="${letter}"]`);
+      if (!keyBtn) return;
+
+      // Öncelik: correct > present > absent
+      if (state === "correct") {
+        keyBtn.classList.remove("present", "absent");
+        keyBtn.classList.add("correct");
+        return;
+      }
+
+      if (state === "present") {
+        if (!keyBtn.classList.contains("correct")) {
+          keyBtn.classList.remove("absent");
+          keyBtn.classList.add("present");
+        }
+        return;
+      }
+
+      if (state === "absent") {
+        if (!keyBtn.classList.contains("correct") && !keyBtn.classList.contains("present")) {
+          keyBtn.classList.add("absent");
+        }
+      }
+    }
+
     function submitRow() {
       if (currentCol < 5) return;
 
@@ -330,8 +359,11 @@
       }
 
       const result = checkGuess(guessWord);
+
       result.forEach((r, c) => {
-        document.getElementById(`cell-${currentRow}-${c}`).classList.add(r);
+        const cell = document.getElementById(`cell-${currentRow}-${c}`);
+        cell.classList.add(r);
+        updateKeyboard(guess[c], r);   // 🔥 Klavye renklendirme
       });
 
       guesses.push({ guess: guessWord, result });
@@ -352,6 +384,7 @@
       const target = WORD.split("");
       g = normalizeTurkish(g).split("");
 
+      // correct
       for (let i = 0; i < 5; i++) {
         if (g[i] === target[i]) {
           res[i] = "correct";
@@ -359,6 +392,7 @@
         }
       }
 
+      // present
       for (let i = 0; i < 5; i++) {
         if (res[i] !== "correct" && target.includes(g[i])) {
           res[i] = "present";
@@ -448,6 +482,7 @@
             const cell = document.getElementById(`cell-${r}-${c}`);
             cell.textContent = ch;
             cell.classList.add(t.result[c]);
+            updateKeyboard(ch, t.result[c]);   // 🔥 geçmiş oyunda da renkleri geri yükle
           });
         });
 
@@ -473,7 +508,11 @@
       currentCol = 0;
       guesses = [];
 
-      document.querySelectorAll(".key").forEach(k => k.disabled = false);
+      // Klavyeyi resetle
+      document.querySelectorAll(".key").forEach(k => {
+        k.classList.remove("correct","present","absent");
+        k.disabled = false;
+      });
     }
 
   </script>
