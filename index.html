@@ -14,6 +14,39 @@
       height: 100vh;
       margin: 0;
       flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hearts-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .heart {
+      position: absolute;
+      font-size: 24px;
+      opacity: 0.4;
+      animation: float-up linear infinite;
+    }
+
+    @keyframes float-up {
+      0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0.4;
+      }
+      50% {
+        opacity: 0.6;
+      }
+      100% {
+        transform: translateY(-100vh) rotate(360deg);
+        opacity: 0;
+      }
     }
 
     .board {
@@ -155,8 +188,10 @@
 </head>
 <body>
 
+  <div class="hearts-container" id="heartsContainer"></div>
+
   <div>
-    <h1>Duyuru Wordle 0.6</h1>
+    <h1>Duyuru Wordle 0.61</h1>
     <div class="board" id="board"></div>
     <div class="keyboard" id="keyboard"></div>
   </div>
@@ -176,6 +211,26 @@
 
   <script>
     const DEV_MODE = localStorage.getItem('duyuruDevMode') === 'true';
+
+    // Kalp animasyonu
+    function createHeart() {
+      const heart = document.createElement('div');
+      heart.classList.add('heart');
+      heart.textContent = '💗';
+      heart.style.left = Math.random() * 100 + '%';
+      heart.style.fontSize = (Math.random() * 10 + 20) + 'px';
+      
+      const duration = Math.random() * 5 + 5; // 5-10 saniye
+      heart.style.animationDuration = duration + 's';
+      heart.style.animationDelay = Math.random() * 2 + 's';
+      
+      document.getElementById('heartsContainer').appendChild(heart);
+      
+      setTimeout(() => heart.remove(), (duration + 2) * 1000);
+    }
+
+    // Her 500ms'de bir kalp oluştur
+    setInterval(createHeart, 500);
 
     window.enableDevMode = () => {
       localStorage.setItem('duyuruDevMode','true');
@@ -400,24 +455,22 @@
       return res;
     }
 
-    // 🔥 Burada HATA DÜZELTİLDİ
     function getResultMessage(count) {
       const link = " Sen de oynamak istiyorsan: https://co2s2co2s2.github.io/duyuruwordle/";
 
       switch(count) {
-        case 1: return "Duyuru Wordle’da ilk kelimeyi bir yazdım, çat diye çıktı😎" + link;
-        case 2: return "Duyuru Wordle’ı iki tahminde bildim, muazzamım😁" + link;
+        case 1: return "Duyuru Wordle'da ilk kelimeyi bir yazdım, çat diye çıktı😎" + link;
+        case 2: return "Duyuru Wordle'ı iki tahminde bildim, muazzamım😁" + link;
         case 3: return "Duyuru Wordle ilkinde olmadı, ikincide olmadı, üçüncüde buldum😉" + link;
-        case 4: return "Duyuru Wordle’ı dördüncü denemede buldum, fena sayılmam🙂" + link;
-        case 5: return "Duyuru Wordle’ı beşinci denemede ancak bulabildim😅" + link;
-        case 6: return "Duyuru Wordle’ı altıda zor bela çözdüm🤨" + link;
+        case 4: return "Duyuru Wordle'ı dördüncü denemede buldum, fena sayılmam🙂" + link;
+        case 5: return "Duyuru Wordle'ı beşinci denemede ancak bulabildim😅" + link;
+        case 6: return "Duyuru Wordle'ı altıda zor bela çözdüm🤨" + link;
 
         default:
-          return "Sercan en sonunda hiç bulamayana “bulamadın” demeyi becermiş🤢" + link;
+          return "Sercan en sonunda hiç bulamayana "bulamadın" demeyi becermiş🤢" + link;
       }
     }
 
-    // 🔥 TAMAMEN DÜZELTİLMİŞ SÜRÜM
     function showShareableResult() {
       const modal = document.getElementById("resultModal");
       const modalEmojis = document.getElementById("modalEmojis");
@@ -431,7 +484,7 @@
       const count = won ? (winIndex + 1) : guesses.length;
 
       // Kaybettiyse özel mesaj
-      const failText = "Sercan en sonunda hiç bulamayana “bulamadın” demeyi becermiş";
+      const failText = "Sercan en sonunda hiç bulamayana "bulamadın" demeyi becermiş";
       const msg = won ? getResultMessage(count) : failText;
 
       modalMessage.textContent = msg;
@@ -441,7 +494,7 @@
       guesses.forEach(t => {
         out += t.result.map(r =>
           r === "correct" ? "🟩" :
-          r === "present" ? "🟧" : "⬛"
+          r === "present" ? "🟨" : "⬜️"
         ).join("") + "\n";
       });
 
