@@ -24,11 +24,11 @@ body {
 }
 
 .heart-layer {
-  position: absolute;
+  position: fixed;
   inset: 0;
   overflow: hidden;
   pointer-events: none;
-  z-index: 0;
+  z-index: 5;
 }
 
 .heart, .confetti {
@@ -157,12 +157,14 @@ body {
 
 <body>
 
-<h1>Duyuru Wordle 0.61</h1>
+<h1>Duyuru Wordle 0.63</h1>
+
+<div class="heart-layer" id="heartLayer"></div>
 
 <div class="board-wrapper">
-  <div class="heart-layer" id="heartLayer"></div>
   <div class="board" id="board"></div>
 </div>
+
 
 <div class="keyboard" id="keyboard"></div>
 
