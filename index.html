@@ -157,7 +157,7 @@ body {
 
 <body>
 
-<h1>Duyuru Wordle 0.64</h1>
+<h1>Duyuru Wordle 0.633</h1>
 
 <div class="heart-layer" id="heartLayer"></div>
 
@@ -244,6 +244,7 @@ let WORD_LIST = [];
 let WORD = null;
 let currentRow = 0;
 let currentCol = 0;
+let guesses = [];
 
 function normalizeTurkish(str) {
   return str.replace(/i/g,'İ').replace(/ı/g,'I')
@@ -325,6 +326,24 @@ function updateKeyboardColor(letter, status) {
   });
 }
 
+/* ===== MODAL ===== */
+function showModal(message, emojis="") {
+  const modal = document.getElementById("resultModal");
+  document.getElementById("modalMessage").textContent = message;
+  document.getElementById("modalEmojis").textContent = emojis;
+  modal.style.display = "flex";
+}
+
+function hideModal() {
+  document.getElementById("resultModal").style.display = "none";
+}
+
+document.getElementById("modalClose").onclick = hideModal;
+document.getElementById("copyButton").onclick = ()=>{
+  navigator.clipboard.writeText(document.getElementById("modalEmojis").textContent);
+};
+
+/* ===== INIT ===== */
 function init(){
   if(DEV_MODE){
     devTag.style.display="block";
@@ -357,6 +376,7 @@ function submit(){
   if(!WORD_LIST.includes(g)){ alert("Geçersiz kelime"); return; }
 
   const res=check(g);
+  guesses.push(res);
 
   res.forEach((r,i)=>{
     document.getElementById(`cell-${currentRow}-${i}`).classList.add(r);
@@ -367,11 +387,40 @@ function submit(){
 
   if(res.every(r=>r==="correct")){
     confetti();
+    const messages = [
+      "Süper! Kelimeyi çözdün 🎉",
+      "Bravo! Sen gerçek bir Wordle ustasısın 😎",
+      "Tebrikler! Harfleri harika kullandın ❤️"
+    ];
+    const msg = messages[Math.floor(Math.random()*messages.length)];
+    showModal(msg, generateEmojiBoard());
+    return;
   } else {
     brokenHearts();
   }
 
-  if(res.every(r=>r==="correct")||currentRow===5) return;
+  if(currentRow === 5){
+    const messages = [
+      `Bilemedin 😅 Kelime: ${WORD}`,
+      `Hmm… Bu sefer olmadı 🤔 Kelime: ${WORD}`,
+      `Maalesef! Doğru kelime: ${WORD} 😬`,
+      `Bu kelime seni yendi 😅 Kelime: ${WORD}`
+    ];
+    const msg = messages[Math.floor(Math.random()*messages.length)];
+    showModal(msg, generateEmojiBoard());
+    return;
+  }
+
+  // Tahmin sonrası kısa mesajlar
+  const shortMessages = [
+    "Denemeye devam! 🤓",
+    "Hadi bakalım! 👀",
+    "Biraz dikkat… 😉",
+    "İyi gidiyorsun! 😎",
+    "Harfleri kontrol et! 🤔"
+  ];
+  const shortMsg = shortMessages[Math.floor(Math.random()*shortMessages.length)];
+  showModal(shortMsg, generateEmojiBoard());
 
   currentRow++; currentCol=0;
 }
@@ -390,6 +439,17 @@ function check(g){
     }
   }
   return res;
+}
+
+/* ===== EMOJI BOARD ===== */
+function generateEmojiBoard(){
+  return guesses.map(r=>{
+    return r.map(s=>{
+      if(s==="correct") return "🟩";
+      if(s==="present") return "🟨";
+      return "⬛";
+    }).join("");
+  }).join("\n");
 }
 </script>
 </body>
