@@ -157,7 +157,7 @@ body {
 
 <body>
 
-<h1>Duyuru Wordle 0.633</h1>
+<h1>Duyuru Wordle 0.635</h1>
 
 <div class="heart-layer" id="heartLayer"></div>
 
@@ -395,11 +395,10 @@ function submit(){
     const msg = messages[Math.floor(Math.random()*messages.length)];
     showModal(msg, generateEmojiBoard());
     return;
-  } else {
-    brokenHearts();
-  }
+  } 
 
   if(currentRow === 5){
+    brokenHearts();
     const messages = [
       `Bilemedin 😅 Kelime: ${WORD}`,
       `Hmm… Bu sefer olmadı 🤔 Kelime: ${WORD}`,
@@ -410,17 +409,6 @@ function submit(){
     showModal(msg, generateEmojiBoard());
     return;
   }
-
-  // Tahmin sonrası kısa mesajlar
-  const shortMessages = [
-    "Denemeye devam! 🤓",
-    "Hadi bakalım! 👀",
-    "Biraz dikkat… 😉",
-    "İyi gidiyorsun! 😎",
-    "Harfleri kontrol et! 🤔"
-  ];
-  const shortMsg = shortMessages[Math.floor(Math.random()*shortMessages.length)];
-  showModal(shortMsg, generateEmojiBoard());
 
   currentRow++; currentCol=0;
 }
