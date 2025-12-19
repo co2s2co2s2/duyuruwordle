@@ -1,331 +1,379 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Duyuru Wordle 0.64</title>
-    <style>
-        :root {
-            --color-correct: #6aaa64;
-            --color-present: #c9b458;
-            --color-absent: #787c7e;
-            --color-border: #d3d6da;
-        }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Duyuru Wordle</title>
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            flex-direction: column;
-            overflow: hidden;
-        }
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #fafafa;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+  flex-direction: column;
+}
 
-        /* ===== BOARD ===== */
-        .board {
-            display: grid;
-            grid-template-rows: repeat(6, 1fr);
-            gap: 5px;
-            margin-bottom: 20px;
-        }
+/* ===== BOARD & EFFECT LAYER ===== */
+.board-wrapper {
+  position: relative;
+  display: inline-block;
+}
 
-        .row { display: grid; grid-template-columns: repeat(5, 62px); gap: 5px; }
+.heart-layer {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 5;
+}
 
-        .cell {
-            width: 62px;
-            height: 62px;
-            border: 2px solid var(--color-border);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 2rem;
-            font-weight: bold;
-            background: white;
-            text-transform: uppercase;
-            transition: transform 0.1s ease;
-            user-select: none;
-        }
+.heart, .confetti {
+  position: absolute;
+  bottom: -30px;
+  animation: floatUp linear forwards;
+  opacity: 0.85;
+}
 
-        /* Animasyonlar */
-        .cell.pop { transform: scale(1.1); border-color: #878a8c; }
-        
-        .flip { animation: flip 0.6s ease forwards; }
-        @keyframes flip {
-            0% { transform: rotateX(0); }
-            50% { transform: rotateX(90deg); }
-            100% { transform: rotateX(0); }
-        }
+.confetti {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
 
-        .correct { background: var(--color-correct) !important; color: white; border-color: var(--color-correct); }
-        .present { background: var(--color-present) !important; color: white; border-color: var(--color-present); }
-        .absent  { background: var(--color-absent) !important; color: white; border-color: var(--color-absent); }
+@keyframes floatUp {
+  from { transform: translateY(0) scale(0.8); opacity: 0.9; }
+  to   { transform: translateY(-120vh) scale(1.4); opacity: 0; }
+}
 
-        /* ===== KEYBOARD ===== */
-        .keyboard { width: 100%; max-width: 500px; padding: 0 8px; }
-        .keyboard-row { display: flex; justify-content: center; margin-bottom: 8px; }
-        .key {
-            background: #d3d6da;
-            border: 0;
-            border-radius: 4px;
-            margin: 2px;
-            height: 58px;
-            cursor: pointer;
-            font-weight: bold;
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 14px;
-        }
-        .key.wide { flex: 1.5; }
+/* ===== BOARD ===== */
+.board {
+  display: grid;
+  grid-template-rows: repeat(6, 1fr);
+  gap: 10px;
+  justify-items: center;
+  position: relative;
+  z-index: 1;
+}
 
-        /* ===== MODAL ===== */
-        .modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(255,255,255,0.8);
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-        }
-        .modal-content {
-            background: #ffffff;
-            padding: 40px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 4px 23px rgba(0,0,0,0.1);
-            max-width: 350px;
-        }
+.row {
+  display: grid;
+  grid-template-columns: repeat(5, 60px);
+  gap: 10px;
+}
 
-        /* Paylaş Butonu */
-        #copyButton {
-            background: var(--color-correct);
-            color: white; border: none; padding: 15px 30px;
-            border-radius: 8px; cursor: pointer; font-size: 1.1rem; font-weight: bold;
-        }
+.cell {
+  width: 60px;
+  height: 60px;
+  border: 2px solid #ccc;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 32px;
+  font-weight: bold;
+  background: white;
+}
 
-        #devTag { 
-            position: fixed; right: 10px; bottom: 10px; background: #ffea00; 
-            padding: 5px 10px; border-radius: 5px; font-size: 12px; font-weight: bold;
-            display: none; cursor: pointer;
-        }
+.correct { background: #6aaa64; color: white; }
+.present { background: #c9b458; color: white; }
+.absent  { background: #787c7e; color: white; }
 
-        /* Efekt Katmanı */
-        .effect-layer { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
-        .falling-emoji { position: absolute; top: -50px; animation: fall linear forwards; }
-        @keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
-    </style>
+/* ===== KEYBOARD ===== */
+.keyboard { margin-top: 20px; text-align: center; max-width: 480px; }
+.keyboard div { display: flex; justify-content: center; margin-bottom: 5px; }
+
+.key {
+  padding: 10px;
+  margin: 2px;
+  min-width: 32px;
+  max-width: 48px;
+  font-weight: bold;
+  border-radius: 4px;
+  border: none;
+  background: #ddd;
+  cursor: pointer;
+}
+
+.key.correct { background: #6aaa64; color: white; }
+.key.present { background: #c9b458; color: white; }
+.key.absent  { background: #787c7e; color: white; }
+
+/* ===== MODAL ===== */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  max-width: 400px;
+  width: 90%;
+  position: relative;
+}
+
+#modalClose {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+#copyButton {
+  margin-top: 12px;
+  padding: 8px 16px;
+  background: #6aaa64;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* DEV TAG */
+#devTag {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  background: #ffea00;
+  padding: 8px;
+  font-weight: bold;
+  border-radius: 8px;
+  display: none;
+  cursor: pointer;
+}
+</style>
 </head>
+
 <body>
 
-<h1>Duyuru Wordle v0.65</h1>
+<h1>Duyuru Wordle 0.63</h1>
 
-<div class="board" id="board"></div>
+<div class="heart-layer" id="heartLayer"></div>
+
+<div class="board-wrapper">
+  <div class="board" id="board"></div>
+</div>
+
+
 <div class="keyboard" id="keyboard"></div>
 
 <div id="resultModal" class="modal">
-    <div class="modal-content">
-        <h2 id="modalTitle">Sonuç</h2>
-        <pre id="modalEmojis" style="font-size: 1.5rem; margin: 20px 0;"></pre>
-        <button id="copyButton">KOPYALA VE PAYLAŞ</button>
-    </div>
+  <div class="modal-content">
+    <span id="modalClose">&times;</span>
+    <div id="modalMessage"></div>
+    <pre id="modalEmojis"></pre>
+    <button id="copyButton">Kopyala</button>
+  </div>
 </div>
 
-<div id="devTag" onclick="disableDevMode()">DEV MODE (Kapatmak için tıkla)</div>
-<div class="effect-layer" id="effectLayer"></div>
+<div id="devTag">DEV MODE</div>
 
 <script>
-/* ================= AYARLAR ================= */
-let WORD_LIST = [];
-let TARGET_WORD = "";
-let currentRow = 0;
-let currentCol = 0;
-let canInput = true;
-let boardHistory = [];
-
-// Dev Mode Kontrolü
+/* ================= DEV MODE ================= */
 const DEV_MODE = localStorage.getItem("duyuruDevMode") === "true";
-window.enableDevMode = () => { localStorage.setItem("duyuruDevMode", "true"); location.reload(); };
+window.enableDevMode = () => { localStorage.setItem("duyuruDevMode","true"); location.reload(); };
 window.disableDevMode = () => { localStorage.removeItem("duyuruDevMode"); location.reload(); };
 
-/* ================= OYUN BAŞLATMA ================= */
-async function loadGame() {
-    try {
-        const response = await fetch("words.json");
-        const data = await response.json();
-        WORD_LIST = data.map(w => normalizeTurkish(w));
-        
-        // Günlük Kelime Seçimi
-        const today = new Date().toISOString().slice(0, 10);
-        let hash = 0;
-        for (let i = 0; i < today.length; i++) {
-            hash = ((hash << 5) - hash) + today.charCodeAt(i);
-            hash |= 0;
-        }
-        TARGET_WORD = WORD_LIST[Math.abs(hash) % WORD_LIST.length];
+/* ================= HEART ENGINE ================= */
+let heartLevel = 1;
+let heartTimer = null;
 
-        if (DEV_MODE) {
-            console.log("Cevap:", TARGET_WORD);
-            document.getElementById("devTag").style.display = "block";
-        }
-
-        createBoard();
-        createKeyboard();
-    } catch (e) {
-        alert("Kelimeler yüklenemedi! words.json dosyasını kontrol edin.");
+function startHearts() {
+  stopHearts();
+  const layer = document.getElementById("heartLayer");
+  heartTimer = setInterval(() => {
+    for (let i = 0; i < heartLevel; i++) {
+      const h = document.createElement("div");
+      h.className = "heart";
+      h.textContent = "💗";
+      h.style.left = Math.random() * 100 + "%";
+      h.style.fontSize = 14 + Math.random() * 18 + "px";
+      h.style.animationDuration = Math.max(3, 8 - heartLevel * 0.6) + "s";
+      layer.appendChild(h);
+      setTimeout(() => h.remove(), 9000);
     }
+  }, Math.max(250, 1200 - heartLevel * 150));
 }
 
-function createBoard() {
-    const board = document.getElementById("board");
-    for (let r = 0; r < 6; r++) {
-        const row = document.createElement("div");
-        row.className = "row";
-        for (let c = 0; c < 5; c++) {
-            const cell = document.createElement("div");
-            cell.className = "cell";
-            cell.id = `c-${r}-${c}`;
-            row.appendChild(cell);
-        }
-        board.appendChild(row);
+function brokenHearts() {
+  const layer = document.getElementById("heartLayer");
+  for (let i = 0; i < heartLevel * 2; i++) {
+    const h = document.createElement("div");
+    h.className = "heart";
+    h.textContent = "💔";
+    h.style.left = Math.random() * 100 + "%";
+    h.style.fontSize = 18 + Math.random() * 18 + "px";
+    h.style.animationDuration = "5s";
+    layer.appendChild(h);
+    setTimeout(() => h.remove(), 6000);
+  }
+}
+
+function confetti() {
+  const colors = ["#ff5c8a","#ffd166","#6aaa64","#4cc9f0"];
+  const layer = document.getElementById("heartLayer");
+  for (let i = 0; i < 30; i++) {
+    const c = document.createElement("div");
+    c.className = "confetti";
+    c.style.left = Math.random() * 100 + "%";
+    c.style.background = colors[Math.floor(Math.random()*colors.length)];
+    c.style.animationDuration = "4s";
+    layer.appendChild(c);
+    setTimeout(() => c.remove(), 5000);
+  }
+}
+
+function stopHearts() {
+  clearInterval(heartTimer);
+  heartTimer = null;
+  document.getElementById("heartLayer").innerHTML = "";
+}
+
+/* ================= WORDLE CORE (ORİJİNAL) ================= */
+let WORD_LIST = [];
+let WORD = null;
+let currentRow = 0;
+let currentCol = 0;
+let guesses = [];
+
+function normalizeTurkish(str) {
+  return str.replace(/i/g,'İ').replace(/ı/g,'I')
+    .replace(/ş/g,'Ş').replace(/ç/g,'Ç')
+    .replace(/ü/g,'Ü').replace(/ö/g,'Ö')
+    .replace(/ğ/g,'Ğ').toUpperCase();
+}
+
+async function getDailyWord() {
+  const now = new Date();
+  const tr = new Date(now.getTime() + 3*60*60*1000);
+  const dateStr = tr.toISOString().slice(0,10);
+  const data = new TextEncoder().encode(dateStr);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  const arr = Array.from(new Uint8Array(hash));
+  const idx = arr.reduce((a,v)=> (a*31+v)%WORD_LIST.length,0);
+  return WORD_LIST[idx];
+}
+
+/* ===== LOAD WORDS ===== */
+fetch("words.json")
+  .then(r=>r.json())
+  .then(async list=>{
+    WORD_LIST = list.map(w=>normalizeTurkish(w.trim()));
+    WORD = await getDailyWord();
+    if (DEV_MODE) console.log("BUGÜN:", WORD);
+    init();
+  });
+
+/* ===== INIT BOARD ===== */
+const board = document.getElementById("board");
+for (let r=0;r<6;r++){
+  const row=document.createElement("div");
+  row.className="row";
+  for(let c=0;c<5;c++){
+    const cell=document.createElement("div");
+    cell.className="cell";
+    cell.id=`cell-${r}-${c}`;
+    row.appendChild(cell);
+  }
+  board.appendChild(row);
+}
+
+/* ===== KEYBOARD ===== */
+const keys=[["Q","W","E","R","T","Y","U","I","O","P","Ğ","Ü"],
+["A","S","D","F","G","H","J","K","L","Ş","İ"],
+["ENTER","Z","X","C","V","B","N","M","Ö","Ç","DEL"]];
+
+const keyboard=document.getElementById("keyboard");
+keys.forEach(r=>{
+  const d=document.createElement("div");
+  r.forEach(k=>{
+    const b=document.createElement("button");
+    b.className="key";
+    b.textContent=k;
+    b.onclick=()=>handleKey(k);
+    d.appendChild(b);
+  });
+  keyboard.appendChild(d);
+});
+
+function init(){
+  if(DEV_MODE){
+    devTag.style.display="block";
+    devTag.onclick=disableDevMode;
+  }
+  startHearts();
+}
+
+/* ===== INPUT ===== */
+function handleKey(k){
+  k=normalizeTurkish(k);
+  if(k==="DEL") return del();
+  if(k==="ENTER") return submit();
+  if(currentCol<5){
+    document.getElementById(`cell-${currentRow}-${currentCol}`).textContent=k;
+    currentCol++;
+  }
+}
+
+function del(){
+  if(currentCol>0){
+    currentCol--;
+    document.getElementById(`cell-${currentRow}-${currentCol}`).textContent="";
+  }
+}
+
+function submit(){
+  if(currentCol<5) return;
+  const g=[...Array(5)].map((_,i)=>document.getElementById(`cell-${currentRow}-${i}`).textContent).join("");
+  if(!WORD_LIST.includes(g)){ alert("Geçersiz kelime"); return; }
+
+  const res=check(g);
+  res.forEach((r,i)=>{
+    const c=document.getElementById(`cell-${currentRow}-${i}`);
+    c.classList.add(r);
+  });
+
+  heartLevel++;
+
+  if(res.every(r=>r==="correct")){
+    confetti();
+  } else {
+    brokenHearts();
+  }
+
+  if(res.every(r=>r==="correct")||currentRow===5){
+    return;
+  }
+
+  currentRow++; currentCol=0;
+}
+
+function check(g){
+  const res=Array(5).fill("absent");
+  const t=WORD.split("");
+  g=g.split("");
+  for(let i=0;i<5;i++){
+    if(g[i]===t[i]){res[i]="correct";t[i]=null;}
+  }
+  for(let i=0;i<5;i++){
+    if(res[i]!=="correct"&&t.includes(g[i])){
+      res[i]="present";
+      t[t.indexOf(g[i])]=null;
     }
+  }
+  return res;
 }
-
-function createKeyboard() {
-    const layout = [
-        ["Q","W","E","R","T","Y","U","I","O","P","Ğ","Ü"],
-        ["A","S","D","F","G","H","J","K","L","Ş","İ"],
-        ["ENTER","Z","X","C","V","B","N","M","Ö","Ç","DEL"]
-    ];
-    const kb = document.getElementById("keyboard");
-    layout.forEach(row => {
-        const rowDiv = document.createElement("div");
-        rowDiv.className = "keyboard-row";
-        row.forEach(key => {
-            const btn = document.createElement("button");
-            btn.className = "key" + (key.length > 4 ? " wide" : "");
-            btn.textContent = key;
-            btn.onclick = () => handleKey(key);
-            btn.setAttribute("data-key", normalizeTurkish(key));
-            rowDiv.appendChild(btn);
-        });
-        kb.appendChild(rowDiv);
-    });
-}
-
-/* ================= MANTIK ================= */
-function normalizeTurkish(s) {
-    return s.toUpperCase().replace(/İ/g, 'İ').replace(/I/g, 'I').replace(/ı/g, 'I').replace(/i/g, 'İ');
-}
-
-function handleKey(k) {
-    if (!canInput) return;
-    if (k === "ENTER") submitRow();
-    else if (k === "DEL" || k === "BACKSPACE") {
-        if (currentCol > 0) {
-            currentCol--;
-            const cell = document.getElementById(`c-${currentRow}-${currentCol}`);
-            cell.textContent = "";
-            cell.classList.remove("pop");
-        }
-    } else if (currentCol < 5 && k.length === 1) {
-        const cell = document.getElementById(`c-${currentRow}-${currentCol}`);
-        cell.textContent = normalizeTurkish(k);
-        cell.classList.add("pop");
-        currentCol++;
-    }
-}
-
-async function submitRow() {
-    if (currentCol < 5) return;
-    
-    const guessArr = [];
-    for(let i=0; i<5; i++) guessArr.push(document.getElementById(`c-${currentRow}-${i}`).textContent);
-    const guess = guessArr.join("");
-
-    if (!WORD_LIST.includes(guess)) {
-        shakeRow();
-        return;
-    }
-
-    canInput = false;
-    const result = checkGuess(guess);
-    
-    // Animasyonlu Renklendirme
-    let emojiRow = "";
-    for (let i = 0; i < 5; i++) {
-        const cell = document.getElementById(`c-${currentRow}-${i}`);
-        cell.classList.add("flip");
-        
-        await new Promise(r => setTimeout(r, 100)); // Harf harf dönme
-        
-        const status = result[i];
-        cell.classList.add(status);
-        updateKeyColor(guess[i], status);
-        
-        emojiRow += (status === "correct" ? "🟩" : status === "present" ? "🟨" : "⬛");
-    }
-    boardHistory.push(emojiRow);
-
-    if (guess === TARGET_WORD) {
-        victory();
-    } else if (currentRow === 5) {
-        gameOver();
-    } else {
-        currentRow++;
-        currentCol = 0;
-        canInput = true;
-    }
-}
-
-function checkGuess(guess) {
-    const res = Array(5).fill("absent");
-    const target = TARGET_WORD.split("");
-    const g = guess.split("");
-
-    for (let i = 0; i < 5; i++) {
-        if (g[i] === target[i]) {
-            res[i] = "correct";
-            target[i] = null;
-        }
-    }
-    for (let i = 0; i < 5; i++) {
-        if (res[i] !== "correct" && target.includes(g[i])) {
-            res[i] = "present";
-            target[target.indexOf(g[i])] = null;
-        }
-    }
-    return res;
-}
-
-function updateKeyColor(letter, status) {
-    const btn = document.querySelector(`.key[data-key="${letter}"]`);
-    if (!btn) return;
-    if (status === "correct") {
-        btn.className = "key correct";
-    } else if (status === "present" && !btn.classList.contains("correct")) {
-        btn.className = "key present";
-    } else if (status === "absent" && !btn.classList.contains("correct") && !btn.classList.contains("present")) {
-        btn.className = "key absent";
-    }
-}
-
-/* ================= EFEKTLER ================= */
-function victory() {
-    spawnEmojis("💗", 40);
-    document.getElementById("modalTitle").textContent = "Mükemmel! 🥳";
-    showModal();
-}
-
-function gameOver() {
-    document.getElementById("modalTitle").textContent = `Kelime: ${TARGET_WORD}`;
-    showModal();
-}
-
-function showModal() {
-    setTimeout(() => {
-        document.getElementById("modalEmojis").textContent = boardHistory.join("\n
+</script>
+</body>
+</html>
