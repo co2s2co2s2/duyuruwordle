@@ -157,14 +157,13 @@ body {
 
 <body>
 
-<h1>Duyuru Wordle 0.63</h1>
+<h1>Duyuru Wordle 0.64</h1>
 
 <div class="heart-layer" id="heartLayer"></div>
 
 <div class="board-wrapper">
   <div class="board" id="board"></div>
 </div>
-
 
 <div class="keyboard" id="keyboard"></div>
 
@@ -240,12 +239,11 @@ function stopHearts() {
   document.getElementById("heartLayer").innerHTML = "";
 }
 
-/* ================= WORDLE CORE (ORİJİNAL) ================= */
+/* ================= WORDLE CORE ================= */
 let WORD_LIST = [];
 let WORD = null;
 let currentRow = 0;
 let currentCol = 0;
-let guesses = [];
 
 function normalizeTurkish(str) {
   return str.replace(/i/g,'İ').replace(/ı/g,'I')
@@ -307,6 +305,26 @@ keys.forEach(r=>{
   keyboard.appendChild(d);
 });
 
+/* ===== KEYBOARD COLOR ENGINE ===== */
+function updateKeyboardColor(letter, status) {
+  document.querySelectorAll(".key").forEach(k => {
+    if (k.textContent === letter) {
+      if (k.classList.contains("correct")) return;
+
+      if (status === "correct") {
+        k.classList.remove("present", "absent");
+        k.classList.add("correct");
+      } else if (status === "present") {
+        if (!k.classList.contains("absent"))
+          k.classList.add("present");
+      } else if (status === "absent") {
+        if (!k.classList.contains("present"))
+          k.classList.add("absent");
+      }
+    }
+  });
+}
+
 function init(){
   if(DEV_MODE){
     devTag.style.display="block";
@@ -339,9 +357,10 @@ function submit(){
   if(!WORD_LIST.includes(g)){ alert("Geçersiz kelime"); return; }
 
   const res=check(g);
+
   res.forEach((r,i)=>{
-    const c=document.getElementById(`cell-${currentRow}-${i}`);
-    c.classList.add(r);
+    document.getElementById(`cell-${currentRow}-${i}`).classList.add(r);
+    updateKeyboardColor(g[i], r);
   });
 
   heartLevel++;
@@ -352,9 +371,7 @@ function submit(){
     brokenHearts();
   }
 
-  if(res.every(r=>r==="correct")||currentRow===5){
-    return;
-  }
+  if(res.every(r=>r==="correct")||currentRow===5) return;
 
   currentRow++; currentCol=0;
 }
