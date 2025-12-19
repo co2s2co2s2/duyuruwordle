@@ -157,7 +157,7 @@ body {
 
 <body>
 
-<h1>Duyuru Wordle 0.635</h1>
+<h1>Duyuru Wordle 0.64</h1>
 
 <div class="heart-layer" id="heartLayer"></div>
 
@@ -205,9 +205,10 @@ function startHearts() {
   }, Math.max(250, 1200 - heartLevel * 150));
 }
 
-function brokenHearts() {
+function brokenHearts(countMultiplier=1) {
   const layer = document.getElementById("heartLayer");
-  for (let i = 0; i < heartLevel * 2; i++) {
+  const total = heartLevel * 2 * countMultiplier;
+  for (let i = 0; i < total; i++) {
     const h = document.createElement("div");
     h.className = "heart";
     h.textContent = "💔";
@@ -393,12 +394,12 @@ function submit(){
       "Tebrikler! Harfleri harika kullandın ❤️"
     ];
     const msg = messages[Math.floor(Math.random()*messages.length)];
-    showModal(msg, generateEmojiBoard());
+    showModal(`${msg}\nTahmin sayısı: ${currentRow+1}`, generateEmojiBoard());
     return;
   } 
 
   if(currentRow === 5){
-    brokenHearts();
+    brokenHearts(1);
     const messages = [
       `Bilemedin 😅 Kelime: ${WORD}`,
       `Hmm… Bu sefer olmadı 🤔 Kelime: ${WORD}`,
@@ -409,6 +410,9 @@ function submit(){
     showModal(msg, generateEmojiBoard());
     return;
   }
+
+  // Yanlış tahmin sonrası kırık kalpler
+  brokenHearts(1);
 
   currentRow++; currentCol=0;
 }
