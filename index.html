@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Duyuru Wordle 0.650</title>
+<title>Duyuru Wordle 0.651</title>
 
 <style>
 body {
@@ -136,7 +136,7 @@ body {
 
 <body>
 
-<h1>Duyuru Wordle 0.650</h1>
+<h1>Duyuru Wordle 0.651</h1>
 
 <div class="board" id="board"></div>
 <div class="keyboard" id="keyboard"></div>
@@ -172,14 +172,16 @@ async function getDailyWord(){
 }
 
 fetch("words.json")
-.then(r=>r.json())
-.then(async list=>{
-  WORD_LIST=list.map(w=>normalizeTurkish(w.trim()));
-  WORD=await getDailyWord();
+.then(r => r.json())
+.then(async list => {
+  WORD_LIST = list.map(w => normalizeTurkish(w.trim()));
+  WORD = await getDailyWord();
+
+  // Eğer oyuncu bugün oynamışsa, modal güvenle açılıyor
   if(localStorage.getItem("playedToday")===getDateString()){
-    guesses=JSON.parse(localStorage.getItem("guessesToday")||"[]");
+    guesses = JSON.parse(localStorage.getItem("guessesToday")||"[]");
     fillBoardWithGuesses();
-    setTimeout(showEndModal, 50); // DOM güncellendikten modal
+    setTimeout(showEndModal, 50);
   }
 });
 
