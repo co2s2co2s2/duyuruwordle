@@ -127,7 +127,7 @@ body {
 
 <body>
 
-<h1>Duyuru Wordle 0.643</h1>
+<h1>Duyuru Wordle 0.643r</h1>
 
 <div class="board" id="board"></div>
 <div class="keyboard" id="keyboard"></div>
@@ -231,7 +231,6 @@ keys.forEach(r=>{
 function handleKey(k){
   k = normalizeTurkish(k);
 
-  // DEV_MODE aktif olsa bile klavye çalışacak
   if(k==="DEL") return del();
   if(k==="ENTER") return submit();
 
@@ -264,6 +263,30 @@ function shakeRow(){
   },400);
 }
 
+/* ===== UPDATE KEYBOARD COLORS ===== */
+function updateKeyboard(guess, result){
+  for(let i=0;i<5;i++){
+    const key = guess[i];
+    const keyButton = Array.from(document.getElementsByClassName("key"))
+                           .find(b=>b.textContent === key);
+    if(!keyButton) continue;
+
+    if(result[i] === "correct"){
+      keyButton.classList.remove("present","absent");
+      keyButton.classList.add("correct");
+    } else if(result[i] === "present"){
+      if(!keyButton.classList.contains("correct")){
+        keyButton.classList.remove("absent");
+        keyButton.classList.add("present");
+      }
+    } else if(result[i] === "absent"){
+      if(!keyButton.classList.contains("correct") && !keyButton.classList.contains("present")){
+        keyButton.classList.add("absent");
+      }
+    }
+  }
+}
+
 function submit(){
   if(currentCol < 5) return;
 
@@ -282,6 +305,8 @@ function submit(){
   res.forEach((r,i)=>{
     document.getElementById(`cell-${currentRow}-${i}`).classList.add(r);
   });
+
+  updateKeyboard(g, res);
 
   if(res.every(r=>r==="correct")){
     showModal("Tebrikler! 🎉", generateEmojiBoard());
