@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Duyuru Wordle 0.644</title>
+<title>Duyuru Wordle 0.645</title>
 
 <style>
 body {
@@ -122,12 +122,27 @@ body {
   border-radius: 4px;
   cursor: pointer;
 }
+
+#modalEmojis span {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  margin: 1px;
+  font-size: 18px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.correctBox { background: #6aaa64; color: white; }
+.presentBox { background: #c9b458; color: white; }
+.absentBox  { background: #b0b0b0; color: white; }
 </style>
 </head>
 
 <body>
 
-<h1>Duyuru Wordle 0.644</h1>
+<h1>Duyuru Wordle 0.645</h1>
 
 <div class="board" id="board"></div>
 <div class="keyboard" id="keyboard"></div>
@@ -136,7 +151,8 @@ body {
   <div class="modal-content">
     <span id="modalClose">&times;</span>
     <div id="modalMessage"></div>
-    <pre id="modalEmojis"></pre>
+    <div id="modalEmojis"></div>
+    <div style="margin-top:8px;">Sen de oynamak istiyorsan: <a href="https://co2s2co2s2.github.io/duyuruwordle/" target="_blank">https://co2s2co2s2.github.io/duyuruwordle/</a></div>
     <button id="copyButton">Kopyala</button>
   </div>
 </div>
@@ -144,17 +160,8 @@ body {
 <script>
 /* ===== DEV MODE (CONSOLE) ===== */
 let DEV_MODE = false;
-
-window.devOn = function() {
-  DEV_MODE = true;
-  console.warn("DEV MODE AKTİF");
-  console.log("BUGÜNÜN KELİMESİ:", WORD);
-};
-
-window.devOff = function() {
-  DEV_MODE = false;
-  console.warn("DEV MODE KAPATILDI");
-};
+window.devOn = function() { DEV_MODE=true; console.warn("DEV MODE AKTİF"); console.log("BUGÜNÜN KELİMESİ:", WORD); };
+window.devOff = function() { DEV_MODE=false; console.warn("DEV MODE KAPATILDI"); };
 
 /* ===== WORDLE CORE ===== */
 let WORD_LIST = [];
@@ -164,7 +171,7 @@ let currentCol = 0;
 let guesses = [];
 
 /* ===== UTILS ===== */
-function normalizeTurkish(str) {
+function normalizeTurkish(str){
   return str.replace(/i/g,'İ').replace(/ı/g,'I')
     .replace(/ş/g,'Ş').replace(/ç/g,'Ç')
     .replace(/ü/g,'Ü')
@@ -172,14 +179,10 @@ function normalizeTurkish(str) {
     .replace(/ğ/g,'Ğ')
     .toUpperCase();
 }
-
-function getDateString(){
-  const tr = new Date(Date.now() + 3*60*60*1000);
-  return tr.toISOString().slice(0,10);
-}
+function getDateString(){ return (new Date(Date.now() + 3*60*60*1000)).toISOString().slice(0,10); }
 
 /* ===== DAILY WORD ===== */
-async function getDailyWord() {
+async function getDailyWord(){
   const tr = new Date(Date.now() + 3*60*60*1000);
   const dateStr = tr.toISOString().slice(0,10);
   const data = new TextEncoder().encode(dateStr);
@@ -196,10 +199,10 @@ fetch("words.json")
     WORD_LIST = list.map(w=>normalizeTurkish(w.trim()));
     WORD = await getDailyWord();
 
-    // Günlük tek oynama kontrolü
+    // Eğer oyuncu daha önce oynamışsa, tahminleri yükle
     if(localStorage.getItem("playedToday") === getDateString()){
-      showModal("Bugün zaten oynadın! Yarın tekrar dene.");
-      return;
+      guesses = JSON.parse(localStorage.getItem("guessesToday") || "[]");
+      showEndModal();
     }
   });
 
@@ -224,15 +227,14 @@ const keys = [
   ["A","S","D","F","G","H","J","K","L","Ş","İ"],
   ["ENTER","Z","X","C","V","B","N","M","Ö","Ç","DEL"]
 ];
-
 const keyboard = document.getElementById("keyboard");
 keys.forEach(r=>{
-  const d = document.createElement("div");
+  const d=document.createElement("div");
   r.forEach(k=>{
-    const b = document.createElement("button");
+    const b=document.createElement("button");
     b.className="key";
-    b.textContent = k;
-    b.onclick = ()=>handleKey(k);
+    b.textContent=k;
+    b.onclick=()=>handleKey(k);
     d.appendChild(b);
   });
   keyboard.appendChild(d);
@@ -241,146 +243,98 @@ keys.forEach(r=>{
 /* ===== INPUT ===== */
 function handleKey(k){
   k = normalizeTurkish(k);
-
+  if(DEV_MODE) return;
   if(k==="DEL") return del();
   if(k==="ENTER") return submit();
-
-  if(currentCol < 5){
-    document.getElementById(`cell-${currentRow}-${currentCol}`).textContent = k;
+  if(currentCol<5){
+    document.getElementById(`cell-${currentRow}-${currentCol}`).textContent=k;
     currentCol++;
   }
 }
+function del(){ if(currentCol>0){ currentCol--; document.getElementById(`cell-${currentRow}-${currentCol}`).textContent=""; } }
+function clearCurrentRow(){ for(let i=0;i<5;i++){ document.getElementById(`cell-${currentRow}-${i}`).textContent=""; } currentCol=0; }
+function shakeRow(){ const row=document.getElementById(`row-${currentRow}`); row.classList.add("shake"); setTimeout(()=>{ row.classList.remove("shake"); clearCurrentRow(); },400); }
 
-function del(){
-  if(currentCol > 0){
-    currentCol--;
-    document.getElementById(`cell-${currentRow}-${currentCol}`).textContent = "";
-  }
-}
-
-function clearCurrentRow(){
-  for(let i=0;i<5;i++){
-    document.getElementById(`cell-${currentRow}-${i}`).textContent="";
-  }
-  currentCol = 0;
-}
-
-function shakeRow(){
-  const row = document.getElementById(`row-${currentRow}`);
-  row.classList.add("shake");
-  setTimeout(()=>{
-    row.classList.remove("shake");
-    clearCurrentRow();
-  },400);
-}
-
-/* ===== UPDATE KEYBOARD COLORS ===== */
-function updateKeyboard(guess, result){
+function updateKeyboard(guess,result){
   for(let i=0;i<5;i++){
     const key = guess[i];
-    const keyButton = Array.from(document.getElementsByClassName("key"))
-                           .find(b=>b.textContent === key);
+    const keyButton = Array.from(document.getElementsByClassName("key")).find(b=>b.textContent===key);
     if(!keyButton) continue;
-
-    if(result[i] === "correct"){
-      keyButton.classList.remove("present","absent");
-      keyButton.classList.add("correct");
-    } else if(result[i] === "present"){
-      if(!keyButton.classList.contains("correct")){
-        keyButton.classList.remove("absent");
-        keyButton.classList.add("present");
-      }
-    } else if(result[i] === "absent"){
-      if(!keyButton.classList.contains("correct") && !keyButton.classList.contains("present")){
-        keyButton.classList.add("absent");
-      }
-    }
+    if(result[i]==="correct"){ keyButton.classList.remove("present","absent"); keyButton.classList.add("correct"); }
+    else if(result[i]==="present"){ if(!keyButton.classList.contains("correct")){ keyButton.classList.remove("absent"); keyButton.classList.add("present"); } }
+    else if(result[i]==="absent"){ if(!keyButton.classList.contains("correct")&&!keyButton.classList.contains("present")) keyButton.classList.add("absent"); }
   }
 }
 
 function submit(){
-  if(currentCol < 5) return;
-
-  const g=[...Array(5)].map((_,i)=>
-    document.getElementById(`cell-${currentRow}-${i}`).textContent
-  ).join("");
-
-  if(!WORD_LIST.includes(g)){
-    shakeRow();
-    return;
-  }
-
-  const res = check(g);
-  guesses.push(res);
-
-  res.forEach((r,i)=>{
-    document.getElementById(`cell-${currentRow}-${i}`).classList.add(r);
-  });
-
-  updateKeyboard(g, res);
-
+  if(currentCol<5) return;
+  const g=[...Array(5)].map((_,i)=>document.getElementById(`cell-${currentRow}-${i}`).textContent).join("");
+  if(!WORD_LIST.includes(g)){ shakeRow(); return; }
+  const res = check(g); guesses.push(res);
+  res.forEach((r,i)=>document.getElementById(`cell-${currentRow}-${i}`).classList.add(r));
+  updateKeyboard(g,res);
   if(res.every(r=>r==="correct")){
-    showModal("Tebrikler! 🎉", generateEmojiBoard());
     localStorage.setItem("playedToday", getDateString());
+    localStorage.setItem("guessesToday", JSON.stringify(guesses));
+    showEndModal();
     return;
   }
-
-  if(currentRow === 5){
-    showModal(`Bilemedin 😅 Kelime: ${WORD}`, generateEmojiBoard());
+  if(currentRow===5){
     localStorage.setItem("playedToday", getDateString());
+    localStorage.setItem("guessesToday", JSON.stringify(guesses));
+    showEndModal();
     return;
   }
-
-  currentRow++;
-  currentCol = 0;
+  currentRow++; currentCol=0;
 }
 
 function check(g){
-  const res = Array(5).fill("absent");
-  const t = WORD.split("");
-  g = g.split("");
-
-  for(let i=0;i<5;i++){
-    if(g[i]===t[i]){
-      res[i]="correct";
-      t[i]=null;
-    }
-  }
-
-  for(let i=0;i<5;i++){
-    if(res[i]!=="correct" && t.includes(g[i])){
-      res[i]="present";
-      t[t.indexOf(g[i])]=null;
-    }
-  }
-
+  const res=Array(5).fill("absent"); const t=WORD.split(""); g=g.split("");
+  for(let i=0;i<5;i++){ if(g[i]===t[i]){ res[i]="correct"; t[i]=null; } }
+  for(let i=0;i<5;i++){ if(res[i]!=="correct"&&t.includes(g[i])){ res[i]="present"; t[t.indexOf(g[i])]=null; } }
   return res;
 }
 
 /* ===== MODAL ===== */
-function showModal(message, emojis=""){
-  document.getElementById("modalMessage").textContent = message;
-  document.getElementById("modalEmojis").textContent = emojis;
-  document.getElementById("resultModal").style.display = "flex";
+function showEndModal(){
+  // Mesaj belirleme
+  let msg="";
+  if(guesses.some(r=>r.every(x=>"correct"===x))){
+    // Kazandı
+    const idx = guesses.findIndex(r=>r.every(x=>"correct"===x));
+    const attempt = idx+1;
+    if(attempt===1) msg="Sen tam bir dahiymişsin! 😎";
+    else if(attempt<=3) msg="Eh işte, fena değil! 😏";
+    else if(attempt<=5) msg="Sonunda bildin ama zorladı! 😅";
+    else msg="Zor bir gün oldu ama başardın! 🎉";
+  } else {
+    msg=`Ahh, bugün şansın yaver gitmedi 😬 Kelime: ${WORD}`;
+  }
+
+  document.getElementById("modalMessage").innerHTML=msg;
+
+  // Kutucukları göster
+  const modalEmojis=document.getElementById("modalEmojis");
+  modalEmojis.innerHTML="";
+  guesses.forEach(r=>{
+    const rowDiv=document.createElement("div");
+    r.forEach(s=>{
+      const span=document.createElement("span");
+      span.className=s==="correct"?"correctBox":s==="present"?"presentBox":"absentBox";
+      span.textContent=" ";
+      rowDiv.appendChild(span);
+    });
+    modalEmojis.appendChild(rowDiv);
+  });
+
+  document.getElementById("resultModal").style.display="flex";
 }
 
-document.getElementById("modalClose").onclick = () =>
-  document.getElementById("resultModal").style.display="none";
-
-document.getElementById("copyButton").onclick = () =>
-  navigator.clipboard.writeText(
-    document.getElementById("modalEmojis").textContent
-  );
-
-/* ===== EMOJI BOARD ===== */
-function generateEmojiBoard(){
-  return guesses.map(r =>
-    r.map(s =>
-      s==="correct" ? "🟩" :
-      s==="present" ? "🟨" : "⬛"
-    ).join("")
-  ).join("\n");
-}
+document.getElementById("modalClose").onclick=()=>document.getElementById("resultModal").style.display="none";
+document.getElementById("copyButton").onclick=()=>{
+  const text=guesses.map(r=>r.map(s=>s==="correct"?"🟩":s==="present"?"🟨":"⬜").join("")).join("\n");
+  navigator.clipboard.writeText(text);
+};
 </script>
 </body>
 </html>
