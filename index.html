@@ -1,9 +1,10 @@
+<!-- index.html v0.658 -->
 <!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Duyuru Wordle 0.660</title>
+<title>Duyuru Wordle 0.658</title>
 <style>
 body { font-family: Arial, sans-serif; background:#fafafa; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; flex-direction:column; }
 .board { display:grid; grid-template-rows:repeat(6,1fr); gap:10px; justify-items:center; }
@@ -18,12 +19,11 @@ body { font-family: Arial, sans-serif; background:#fafafa; display:flex; justify
 .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; }
 .modal-content { background:white; padding:20px; border-radius:8px; text-align:center; max-width:400px; width:90%; position:relative; }
 #modalClose { position:absolute; top:8px; right:12px; font-size:22px; cursor:pointer; }
-#copyButton, #newGameButton { margin-top:12px; padding:8px 16px; background:#6aaa64; color:white; border:none; border-radius:4px; cursor:pointer; }
-#newGameButton { display:none; margin-left:10px; }
+#copyButton { margin-top:12px; padding:8px 16px; background:#6aaa64; color:white; border:none; border-radius:4px; cursor:pointer; }
 </style>
 </head>
 <body>
-<h1>Duyuru Wordle 0.660</h1>
+<h1>Duyuru Wordle 0.658</h1>
 <div class="board" id="board"></div>
 <div class="keyboard" id="keyboard"></div>
 <div id="resultModal" class="modal">
@@ -32,15 +32,20 @@ body { font-family: Arial, sans-serif; background:#fafafa; display:flex; justify
     <div id="modalMessage"></div>
     <pre id="modalEmojis"></pre>
     <button id="copyButton">Kopyala</button>
-    <button id="newGameButton">Yeni Oyun</button>
   </div>
 </div>
 <script>
 let DEV_MODE=false;
-window.devOn=()=>{DEV_MODE=true; console.warn("DEV MODE AKTİF"); console.log("BUGÜNÜN KELİMESİ:", WORD); document.getElementById("newGameButton").style.display="inline-block";};
-window.devOff=()=>{DEV_MODE=false; console.warn("DEV MODE KAPATILDI"); document.getElementById("newGameButton").style.display="none";};
+window.devOn=()=>{
+  DEV_MODE=true; 
+  console.warn("DEV MODE AKTİF"); 
+  console.log("BUGÜNÜN KELİMESİ:", WORD);
+  // DEV_MODE açıksa sayfa yenilenince oyunu baştan başlat
+  window.addEventListener('beforeunload',()=>{ localStorage.clear(); });
+};
+window.devOff=()=>{DEV_MODE=false; console.warn("DEV MODE KAPATILDI");};
 
-let WORD_LIST=[], WORD=null, currentRow=0, currentCol=0, guesses=[], guessesWords=[];
+let WORD_LIST=[], WORD=null, currentRow=0, currentCol=0, guesses=[];
 
 // --- UTILS ---
 function normalizeTurkish(str){return str.replace(/i/g,'İ').replace(/ı/g,'I').replace(/ş/g,'Ş').replace(/ç/g,'Ç').replace(/ü/g,'Ü').replace(/ö/g,'Ö').replace(/ğ/g,'Ğ').toUpperCase();}
@@ -58,7 +63,7 @@ async function getDailyWord(){
 fetch("words.json").then(r=>r.json()).then(async list=>{
   WORD_LIST=list.map(w=>normalizeTurkish(w.trim()));
   WORD=await getDailyWord();
-  if(!DEV_MODE) loadFromStorage();
+  loadFromStorage();
   renderBoard();
   renderKeyboard();
   if(isGameFinished()) openModalForFinishedGame();
@@ -81,12 +86,17 @@ function renderKeyboard(){
     const d=document.createElement("div");
     r.forEach(k=>{
       const b=document.createElement("button");
-      b.className="key"; b.textContent=k; b.onclick=()=>handleKey(k);
+      b.className="key";
+      b.textContent=k;
+      b.onclick=()=>handleKey(k);
       d.appendChild(b);
     });
     keyboard.appendChild(d);
   });
-  guesses.forEach((res,i)=>{ const g=guessesWords[i]; updateKeyboard(g,res); });
+  guesses.forEach((res,i)=>{
+    const g = guessesWords[i];
+    updateKeyboard(g,res);
+  });
 }
 
 // --- INPUT ---
@@ -94,12 +104,17 @@ function handleKey(k){
   k=normalizeTurkish(k);
   if(k==="DEL") return del();
   if(k==="ENTER") return submit();
-  if(currentCol<5){ document.getElementById(`cell-${currentRow}-${currentCol}`).textContent=k; currentCol++; }
+  if(currentCol<5){
+    document.getElementById(`cell-${currentRow}-${currentCol}`).textContent=k;
+    currentCol++;
+  }
 }
+
 function del(){ if(currentCol>0){ currentCol--; document.getElementById(`cell-${currentRow}-${currentCol}`).textContent=""; } }
 function clearCurrentRow(){ for(let i=0;i<5;i++){ document.getElementById(`cell-${currentRow}-${i}`).textContent=""; } currentCol=0; }
 function shakeRow(){ const row=document.getElementById(`row-${currentRow}`); row.classList.add("shake"); setTimeout(()=>{ row.classList.remove("shake"); clearCurrentRow(); },400); }
 
+let guessesWords = [];
 function submit(){
   if(currentCol<5) return;
   const g=[...Array(5)].map((_,i)=>document.getElementById(`cell-${currentRow}-${i}`).textContent).join("");
@@ -108,7 +123,7 @@ function submit(){
   guesses.push(res); guessesWords.push(g);
   res.forEach((r,i)=>document.getElementById(`cell-${currentRow}-${i}`).classList.add(r));
   updateKeyboard(g,res);
-  if(!DEV_MODE) saveToStorage();
+  saveToStorage();
   if(res.every(r=>r==="correct")){ showModal(getFunnyMessage(guesses.length,true), generateEmojiBoard()); return; }
   if(currentRow===5){ showModal(getFunnyMessage(guesses.length,false), generateEmojiBoard()); return; }
   currentRow++; currentCol=0;
@@ -136,22 +151,12 @@ function getFunnyMessage(guessCount,success){
     return messages[Math.min(guessCount-1,messages.length-1)];
   } else { return `Bu sefer olmadı 😭 Kelime: ${WORD}`; }
 }
-function showModal(message,emojis=""){
-  document.getElementById("modalMessage").textContent=message;
-  document.getElementById("modalEmojis").textContent=emojis;
-  document.getElementById("resultModal").style.display="flex";
-  if(DEV_MODE) document.getElementById("newGameButton").style.display="inline-block";
-}
+
+function showModal(message,emojis=""){ document.getElementById("modalMessage").textContent=message; document.getElementById("modalEmojis").textContent=emojis; document.getElementById("resultModal").style.display="flex"; }
 document.getElementById("modalClose").onclick=()=>document.getElementById("resultModal").style.display="none";
 document.getElementById("copyButton").onclick=()=>{
   const text=`${document.getElementById("modalMessage").textContent}\n${document.getElementById("modalEmojis").textContent}`;
   navigator.clipboard.writeText(text);
-}
-
-// --- NEW GAME DEV BUTTON ---
-document.getElementById("newGameButton").onclick=()=>{
-  guesses=[]; guessesWords=[]; currentRow=0; currentCol=0;
-  renderBoard(); renderKeyboard(); document.getElementById("resultModal").style.display="none";
 }
 
 // --- EMOJI BOARD ---
@@ -166,6 +171,7 @@ function saveToStorage(){
 }
 
 function loadFromStorage(){
+  if(DEV_MODE){ localStorage.clear(); guesses=[]; guessesWords=[]; currentRow=0; return; }
   const storedWord = localStorage.getItem("dw_word");
   if(storedWord && WORD_LIST.includes(storedWord)) WORD=storedWord;
   const g=JSON.parse(localStorage.getItem("dw_guesses")||"[]");
@@ -174,7 +180,7 @@ function loadFromStorage(){
   guesses=g; guessesWords=gw; currentRow=cr;
 }
 
-// --- RENDER ---
+// --- RENDER FROM STORAGE ---
 function renderBoard(){
   guesses.forEach((res,rowIdx)=>{
     const g = guessesWords[rowIdx];
