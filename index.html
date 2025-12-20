@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Duyuru Wordle 0.646</title>
+<title>Duyuru Wordle 0.647</title>
 
 <style>
 body {
@@ -142,7 +142,7 @@ body {
 
 <body>
 
-<h1>Duyuru Wordle 0.646</h1>
+<h1>Duyuru Wordle 0.647</h1>
 
 <div class="board" id="board"></div>
 <div class="keyboard" id="keyboard"></div>
@@ -158,28 +158,30 @@ body {
 </div>
 
 <script>
-/* ===== DEV MODE ===== */
 let DEV_MODE = false;
 window.devOn=function(){DEV_MODE=true;console.warn("DEV MODE AKTİF");console.log("BUGÜNÜN KELİMESİ:",WORD);};
 window.devOff=function(){DEV_MODE=false;console.warn("DEV MODE KAPATILDI");};
 
-/* ===== WORDLE CORE ===== */
 let WORD_LIST=[],WORD=null,currentRow=0,currentCol=0,guesses=[];
 
-/* ===== UTILS ===== */
 function normalizeTurkish(str){return str.replace(/i/g,'İ').replace(/ı/g,'I').replace(/ş/g,'Ş').replace(/ç/g,'Ç').replace(/ü/g,'Ü').replace(/ö/g,'Ö').replace(/ğ/g,'Ğ').toUpperCase();}
 function getDateString(){return(new Date(Date.now()+3*60*60*1000)).toISOString().slice(0,10);}
 
-/* ===== DAILY WORD ===== */
-async function getDailyWord(){const tr=new Date(Date.now()+3*60*60*1000);const dateStr=tr.toISOString().slice(0,10);const data=new TextEncoder().encode(dateStr);const hash=await crypto.subtle.digest("SHA-256",data);const arr=Array.from(new Uint8Array(hash));const idx=arr.reduce((a,v)=>(a*31+v)%WORD_LIST.length,0);return WORD_LIST[idx];}
+async function getDailyWord(){
+  const tr=new Date(Date.now()+3*60*60*1000);
+  const dateStr=tr.toISOString().slice(0,10);
+  const data=new TextEncoder().encode(dateStr);
+  const hash=await crypto.subtle.digest("SHA-256",data);
+  const arr=Array.from(new Uint8Array(hash));
+  const idx=arr.reduce((a,v)=>(a*31+v)%WORD_LIST.length,0);
+  return WORD_LIST[idx];
+}
 
-/* ===== LOAD WORDS ===== */
 fetch("words.json")
 .then(r=>r.json())
 .then(async list=>{
   WORD_LIST=list.map(w=>normalizeTurkish(w.trim()));
   WORD=await getDailyWord();
-  // Eğer oyuncu daha önce oynamışsa, tahminleri yükle ve board doldur
   if(localStorage.getItem("playedToday")===getDateString()){
     guesses=JSON.parse(localStorage.getItem("guessesToday")||"[]");
     fillBoardWithGuesses();
@@ -187,16 +189,13 @@ fetch("words.json")
   }
 });
 
-/* ===== INIT BOARD ===== */
 const board=document.getElementById("board");
 for(let r=0;r<6;r++){const row=document.createElement("div");row.className="row";row.id=`row-${r}`;for(let c=0;c<5;c++){const cell=document.createElement("div");cell.className="cell";cell.id=`cell-${r}-${c}`;row.appendChild(cell);}board.appendChild(row);}
 
-/* ===== KEYBOARD ===== */
 const keys=[["Q","W","E","R","T","Y","U","I","O","P","Ğ","Ü"],["A","S","D","F","G","H","J","K","L","Ş","İ"],["ENTER","Z","X","C","V","B","N","M","Ö","Ç","DEL"]];
 const keyboard=document.getElementById("keyboard");
 keys.forEach(r=>{const d=document.createElement("div");r.forEach(k=>{const b=document.createElement("button");b.className="key";b.textContent=k;b.onclick=()=>handleKey(k);d.appendChild(b);});keyboard.appendChild(d);});
 
-/* ===== INPUT ===== */
 function handleKey(k){
   k=normalizeTurkish(k);
   if(DEV_MODE) return;
@@ -221,20 +220,21 @@ function submit(){
 }
 function check(g){const res=Array(5).fill("absent");const t=WORD.split("");g=g.split("");for(let i=0;i<5;i++){if(g[i]===t[i]){res[i]="correct";t[i]=null;}}for(let i=0;i<5;i++){if(res[i]!=="correct"&&t.includes(g[i])){res[i]="present";t[t.indexOf(g[i])]=null;}}return res;}
 
-/* ===== FILL BOARD FROM LOCALSTORAGE ===== */
+/* ===== FILL BOARD WITH GUESSES AND LETTERS ===== */
 function fillBoardWithGuesses(){
   guesses.forEach((r,row)=>{
+    const guessStr = Array.from({length:5},(_,i)=>document.getElementById(`cell-${row}-${i}`).textContent || " ");
     r.forEach((s,col)=>{
       const cell=document.getElementById(`cell-${row}-${col}`);
-      cell.textContent=WORD[col]==="undefined"?"":normalizeTurkish(""); // Harfi göstermek için düzenlenecek
+      cell.textContent = guessStr[col]!==""?guessStr[col]:" "; // harf görünür
       if(s==="correct") cell.classList.add("correct");
       else if(s==="present") cell.classList.add("present");
       else cell.classList.add("absent");
     });
   });
-  // Klavye güncelle
+  // Klavyeyi güncelle
   guesses.forEach((r,row)=>{
-    const guessStr=Array.from({length:5},(_,i)=>document.getElementById(`cell-${row}-${i}`).textContent).join("");
+    const guessStr = Array.from({length:5},(_,i)=>document.getElementById(`cell-${row}-${i}`).textContent).join("");
     updateKeyboard(guessStr,r);
   });
 }
