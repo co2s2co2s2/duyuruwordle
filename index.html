@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Duyuru Wordle 0.647</title>
+<title>Duyuru Wordle 0.648</title>
 
 <style>
 body {
@@ -57,7 +57,7 @@ body {
 
 .correct { background: #6aaa64; color: white; }
 .present { background: #c9b458; color: white; }
-.absent  { background: #787c7e; color: white; }
+.absent  { background: #b0b0b0; color: white; }
 
 .keyboard {
   margin-top: 20px;
@@ -142,7 +142,7 @@ body {
 
 <body>
 
-<h1>Duyuru Wordle 0.647</h1>
+<h1>Duyuru Wordle 0.648</h1>
 
 <div class="board" id="board"></div>
 <div class="keyboard" id="keyboard"></div>
@@ -211,7 +211,7 @@ function submit(){
   if(currentCol<5) return;
   const g=[...Array(5)].map((_,i)=>document.getElementById(`cell-${currentRow}-${i}`).textContent).join("");
   if(!WORD_LIST.includes(g)){shakeRow();return;}
-  const res=check(g);guesses.push(res);
+  const res=check(g);guesses.push({letters:g.split(""),result:res});
   res.forEach((r,i)=>document.getElementById(`cell-${currentRow}-${i}`).classList.add(r));
   updateKeyboard(g,res);
   if(res.every(r=>"correct"===r)){localStorage.setItem("playedToday",getDateString());localStorage.setItem("guessesToday",JSON.stringify(guesses));fillBoardWithGuesses();showEndModal();return;}
@@ -222,28 +222,27 @@ function check(g){const res=Array(5).fill("absent");const t=WORD.split("");g=g.s
 
 /* ===== FILL BOARD WITH GUESSES AND LETTERS ===== */
 function fillBoardWithGuesses(){
-  guesses.forEach((r,row)=>{
-    const guessStr = Array.from({length:5},(_,i)=>document.getElementById(`cell-${row}-${i}`).textContent || " ");
-    r.forEach((s,col)=>{
+  guesses.forEach((gObj,row)=>{
+    gObj.result.forEach((s,col)=>{
       const cell=document.getElementById(`cell-${row}-${col}`);
-      cell.textContent = guessStr[col]!==""?guessStr[col]:" "; // harf görünür
+      cell.textContent = gObj.letters[col]; // harfi yaz
       if(s==="correct") cell.classList.add("correct");
       else if(s==="present") cell.classList.add("present");
       else cell.classList.add("absent");
     });
   });
   // Klavyeyi güncelle
-  guesses.forEach((r,row)=>{
-    const guessStr = Array.from({length:5},(_,i)=>document.getElementById(`cell-${row}-${i}`).textContent).join("");
-    updateKeyboard(guessStr,r);
+  guesses.forEach(gObj=>{
+    updateKeyboard(gObj.letters.join(""), gObj.result);
   });
 }
 
 /* ===== MODAL ===== */
 function showEndModal(){
   let msg="";
-  if(guesses.some(r=>r.every(x=>"correct"===x))){
-    const idx=guesses.findIndex(r=>r.every(x=>"correct"===x));
+  const won=guesses.some(r=>r.result.every(x=>"correct"===x));
+  if(won){
+    const idx=guesses.findIndex(r=>r.result.every(x=>"correct"===x));
     const attempt=idx+1;
     if(attempt===1) msg="Sen tam bir dahiymişsin! 😎";
     else if(attempt<=3) msg="Eh işte, fena değil! 😏";
@@ -254,12 +253,12 @@ function showEndModal(){
 
   const modalEmojis=document.getElementById("modalEmojis");
   modalEmojis.innerHTML="";
-  guesses.forEach(r=>{
+  guesses.forEach(gObj=>{
     const rowDiv=document.createElement("div");
-    r.forEach(s=>{
+    gObj.result.forEach(s=>{
       const span=document.createElement("span");
       span.className=s==="correct"?"correctBox":s==="present"?"presentBox":"absentBox";
-      span.textContent=" ";
+      span.textContent=" "; // kutu boş harf
       rowDiv.appendChild(span);
     });
     modalEmojis.appendChild(rowDiv);
@@ -270,7 +269,7 @@ function showEndModal(){
 
 document.getElementById("modalClose").onclick=()=>document.getElementById("resultModal").style.display="none";
 document.getElementById("copyButton").onclick=()=>{
-  const text=guesses.map(r=>r.map(s=>s==="correct"?"🟩":s==="present"?"🟨":"⬜").join("")).join("\n");
+  const text=guesses.map(r=>r.result.map(s=>s==="correct"?"🟩":s==="present"?"🟨":"⬜").join("")).join("\n");
   navigator.clipboard.writeText(text);
 };
 </script>
