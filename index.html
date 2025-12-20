@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Duyuru Wordle 0.649</title>
+<title>Duyuru Wordle 0.650</title>
 
 <style>
 body {
@@ -51,9 +51,7 @@ body {
   100% { transform: translateX(0); }
 }
 
-.row.shake {
-  animation: shake 0.4s;
-}
+.row.shake { animation: shake 0.4s; }
 
 .correct { background: #6aaa64; color: white; }
 .present { background: #c9b458; color: white; }
@@ -64,11 +62,7 @@ body {
   text-align: center;
   max-width: 480px;
 }
-.keyboard div {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 5px;
-}
+.keyboard div { display: flex; justify-content: center; margin-bottom: 5px; }
 
 .key {
   padding: 10px;
@@ -142,7 +136,7 @@ body {
 
 <body>
 
-<h1>Duyuru Wordle 0.649</h1>
+<h1>Duyuru Wordle 0.650</h1>
 
 <div class="board" id="board"></div>
 <div class="keyboard" id="keyboard"></div>
@@ -185,7 +179,7 @@ fetch("words.json")
   if(localStorage.getItem("playedToday")===getDateString()){
     guesses=JSON.parse(localStorage.getItem("guessesToday")||"[]");
     fillBoardWithGuesses();
-    showEndModal();
+    setTimeout(showEndModal, 50); // DOM güncellendikten modal
   }
 });
 
@@ -250,7 +244,7 @@ function submit(){
     localStorage.setItem("playedToday",getDateString());
     localStorage.setItem("guessesToday",JSON.stringify(guesses));
     fillBoardWithGuesses();
-    showEndModal();
+    setTimeout(showEndModal,50);
     return;
   }
   currentRow++;currentCol=0;
