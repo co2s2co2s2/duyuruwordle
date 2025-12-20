@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Duyuru Wordle</title>
+<title>Duyuru Wordle 0.644</title>
 
 <style>
 body {
@@ -127,7 +127,7 @@ body {
 
 <body>
 
-<h1>Duyuru Wordle 0.643r</h1>
+<h1>Duyuru Wordle 0.644</h1>
 
 <div class="board" id="board"></div>
 <div class="keyboard" id="keyboard"></div>
@@ -173,6 +173,11 @@ function normalizeTurkish(str) {
     .toUpperCase();
 }
 
+function getDateString(){
+  const tr = new Date(Date.now() + 3*60*60*1000);
+  return tr.toISOString().slice(0,10);
+}
+
 /* ===== DAILY WORD ===== */
 async function getDailyWord() {
   const tr = new Date(Date.now() + 3*60*60*1000);
@@ -190,6 +195,12 @@ fetch("words.json")
   .then(async list=>{
     WORD_LIST = list.map(w=>normalizeTurkish(w.trim()));
     WORD = await getDailyWord();
+
+    // Günlük tek oynama kontrolü
+    if(localStorage.getItem("playedToday") === getDateString()){
+      showModal("Bugün zaten oynadın! Yarın tekrar dene.");
+      return;
+    }
   });
 
 /* ===== INIT BOARD ===== */
@@ -310,11 +321,13 @@ function submit(){
 
   if(res.every(r=>r==="correct")){
     showModal("Tebrikler! 🎉", generateEmojiBoard());
+    localStorage.setItem("playedToday", getDateString());
     return;
   }
 
   if(currentRow === 5){
     showModal(`Bilemedin 😅 Kelime: ${WORD}`, generateEmojiBoard());
+    localStorage.setItem("playedToday", getDateString());
     return;
   }
 
