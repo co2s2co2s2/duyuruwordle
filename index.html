@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Duyuru Wordle 0.648</title>
+<title>Duyuru Wordle 0.649</title>
 
 <style>
 body {
@@ -123,7 +123,7 @@ body {
   cursor: pointer;
 }
 
-#modalEmojis span {
+#modalEmojis div span {
   display: inline-block;
   width: 32px;
   height: 32px;
@@ -142,7 +142,7 @@ body {
 
 <body>
 
-<h1>Duyuru Wordle 0.648</h1>
+<h1>Duyuru Wordle 0.649</h1>
 
 <div class="board" id="board"></div>
 <div class="keyboard" id="keyboard"></div>
@@ -190,11 +190,32 @@ fetch("words.json")
 });
 
 const board=document.getElementById("board");
-for(let r=0;r<6;r++){const row=document.createElement("div");row.className="row";row.id=`row-${r}`;for(let c=0;c<5;c++){const cell=document.createElement("div");cell.className="cell";cell.id=`cell-${r}-${c}`;row.appendChild(cell);}board.appendChild(row);}
+for(let r=0;r<6;r++){
+  const row=document.createElement("div");
+  row.className="row";
+  row.id=`row-${r}`;
+  for(let c=0;c<5;c++){
+    const cell=document.createElement("div");
+    cell.className="cell";
+    cell.id=`cell-${r}-${c}`;
+    row.appendChild(cell);
+  }
+  board.appendChild(row);
+}
 
 const keys=[["Q","W","E","R","T","Y","U","I","O","P","Ğ","Ü"],["A","S","D","F","G","H","J","K","L","Ş","İ"],["ENTER","Z","X","C","V","B","N","M","Ö","Ç","DEL"]];
 const keyboard=document.getElementById("keyboard");
-keys.forEach(r=>{const d=document.createElement("div");r.forEach(k=>{const b=document.createElement("button");b.className="key";b.textContent=k;b.onclick=()=>handleKey(k);d.appendChild(b);});keyboard.appendChild(d);});
+keys.forEach(r=>{
+  const d=document.createElement("div");
+  r.forEach(k=>{
+    const b=document.createElement("button");
+    b.className="key";
+    b.textContent=k;
+    b.onclick=()=>handleKey(k);
+    d.appendChild(b);
+  });
+  keyboard.appendChild(d);
+});
 
 function handleKey(k){
   k=normalizeTurkish(k);
@@ -206,38 +227,57 @@ function handleKey(k){
 function del(){if(currentCol>0){currentCol--;document.getElementById(`cell-${currentRow}-${currentCol}`).textContent="";}}
 function clearCurrentRow(){for(let i=0;i<5;i++){document.getElementById(`cell-${currentRow}-${i}`).textContent="";}currentCol=0;}
 function shakeRow(){const row=document.getElementById(`row-${currentRow}`);row.classList.add("shake");setTimeout(()=>{row.classList.remove("shake");clearCurrentRow();},400);}
-function updateKeyboard(guess,result){for(let i=0;i<5;i++){const key=guess[i];const keyButton=Array.from(document.getElementsByClassName("key")).find(b=>b.textContent===key);if(!keyButton) continue;if(result[i]==="correct"){keyButton.classList.remove("present","absent");keyButton.classList.add("correct");}else if(result[i]==="present"){if(!keyButton.classList.contains("correct")){keyButton.classList.remove("absent");keyButton.classList.add("present");}}else if(result[i]==="absent"){if(!keyButton.classList.contains("correct")&&!keyButton.classList.contains("present")) keyButton.classList.add("absent");}}}
+function updateKeyboard(guess,result){
+  for(let i=0;i<5;i++){
+    const key=guess[i];
+    const keyButton=Array.from(document.getElementsByClassName("key")).find(b=>b.textContent===key);
+    if(!keyButton) continue;
+    if(result[i]==="correct"){keyButton.classList.remove("present","absent");keyButton.classList.add("correct");}
+    else if(result[i]==="present"){if(!keyButton.classList.contains("correct")){keyButton.classList.remove("absent");keyButton.classList.add("present");}}
+    else if(result[i]==="absent"){if(!keyButton.classList.contains("correct")&&!keyButton.classList.contains("present")) keyButton.classList.add("absent");}
+  }
+}
+
 function submit(){
   if(currentCol<5) return;
   const g=[...Array(5)].map((_,i)=>document.getElementById(`cell-${currentRow}-${i}`).textContent).join("");
   if(!WORD_LIST.includes(g)){shakeRow();return;}
-  const res=check(g);guesses.push({letters:g.split(""),result:res});
+  const res=check(g);
+  guesses.push({letters:g.split(""),result:res});
   res.forEach((r,i)=>document.getElementById(`cell-${currentRow}-${i}`).classList.add(r));
   updateKeyboard(g,res);
-  if(res.every(r=>"correct"===r)){localStorage.setItem("playedToday",getDateString());localStorage.setItem("guessesToday",JSON.stringify(guesses));fillBoardWithGuesses();showEndModal();return;}
-  if(currentRow===5){localStorage.setItem("playedToday",getDateString());localStorage.setItem("guessesToday",JSON.stringify(guesses));fillBoardWithGuesses();showEndModal();return;}
+  if(res.every(r=>"correct"===r)||currentRow===5){
+    localStorage.setItem("playedToday",getDateString());
+    localStorage.setItem("guessesToday",JSON.stringify(guesses));
+    fillBoardWithGuesses();
+    showEndModal();
+    return;
+  }
   currentRow++;currentCol=0;
 }
-function check(g){const res=Array(5).fill("absent");const t=WORD.split("");g=g.split("");for(let i=0;i<5;i++){if(g[i]===t[i]){res[i]="correct";t[i]=null;}}for(let i=0;i<5;i++){if(res[i]!=="correct"&&t.includes(g[i])){res[i]="present";t[t.indexOf(g[i])]=null;}}return res;}
 
-/* ===== FILL BOARD WITH GUESSES AND LETTERS ===== */
+function check(g){
+  const res=Array(5).fill("absent");
+  const t=WORD.split("");
+  g=g.split("");
+  for(let i=0;i<5;i++){if(g[i]===t[i]){res[i]="correct";t[i]=null;}}
+  for(let i=0;i<5;i++){if(res[i]!=="correct"&&t.includes(g[i])){res[i]="present";t[t.indexOf(g[i])]=null;}}
+  return res;
+}
+
 function fillBoardWithGuesses(){
   guesses.forEach((gObj,row)=>{
     gObj.result.forEach((s,col)=>{
       const cell=document.getElementById(`cell-${row}-${col}`);
-      cell.textContent = gObj.letters[col]; // harfi yaz
+      cell.textContent = gObj.letters[col];
       if(s==="correct") cell.classList.add("correct");
       else if(s==="present") cell.classList.add("present");
       else cell.classList.add("absent");
     });
   });
-  // Klavyeyi güncelle
-  guesses.forEach(gObj=>{
-    updateKeyboard(gObj.letters.join(""), gObj.result);
-  });
+  guesses.forEach(gObj=>updateKeyboard(gObj.letters.join(""), gObj.result));
 }
 
-/* ===== MODAL ===== */
 function showEndModal(){
   let msg="";
   const won=guesses.some(r=>r.result.every(x=>"correct"===x));
@@ -258,12 +298,11 @@ function showEndModal(){
     gObj.result.forEach(s=>{
       const span=document.createElement("span");
       span.className=s==="correct"?"correctBox":s==="present"?"presentBox":"absentBox";
-      span.textContent=" "; // kutu boş harf
+      span.textContent=" "; 
       rowDiv.appendChild(span);
     });
     modalEmojis.appendChild(rowDiv);
   });
-
   document.getElementById("resultModal").style.display="flex";
 }
 
