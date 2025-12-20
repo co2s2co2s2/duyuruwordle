@@ -131,7 +131,7 @@ body {
 
 <body>
 
-<h1>Duyuru Wordle 0.643nod</h1>
+<h1>Duyuru Wordle 0.643</h1>
 
 <div class="board" id="board"></div>
 <div class="keyboard" id="keyboard"></div>
@@ -146,6 +146,21 @@ body {
 </div>
 
 <script>
+/* ===== DEV MODE (CONSOLE) ===== */
+let DEV_MODE = false;
+
+window.devOn = function () {
+  DEV_MODE = true;
+  console.warn("DEV MODE AKTİF");
+  console.log("BUGÜNÜN KELİMESİ:", WORD);
+};
+
+window.devOff = function () {
+  DEV_MODE = false;
+  console.warn("DEV MODE KAPATILDI");
+};
+
+/* ===== WORDLE CORE ===== */
 let WORD_LIST = [];
 let WORD = null;
 let currentRow = 0;
@@ -156,7 +171,8 @@ let guesses = [];
 function normalizeTurkish(str) {
   return str.replace(/i/g,'İ').replace(/ı/g,'I')
     .replace(/ş/g,'Ş').replace(/ç/g,'Ç')
-    .replace(/ü/g,'Ü').replace(/ö/g,'Ö')
+    .replace(/ü/g,'Ü')
+    .replace(/ö/g,'Ö')
     .replace(/ğ/g,'Ğ')
     .toUpperCase();
 }
@@ -217,6 +233,8 @@ keys.forEach(r=>{
 
 /* ===== INPUT ===== */
 function handleKey(k){
+  if (DEV_MODE) return; // DEV modda klavye kapalı
+
   k = normalizeTurkish(k);
 
   if(k==="DEL") return del();
