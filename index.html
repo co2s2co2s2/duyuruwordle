@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Duyuru Wordle 0.651</title>
+<title>Duyuru Wordle 0.652</title>
 
 <style>
 body {
@@ -136,7 +136,7 @@ body {
 
 <body>
 
-<h1>Duyuru Wordle 0.651</h1>
+<h1>Duyuru Wordle 0.652</h1>
 
 <div class="board" id="board"></div>
 <div class="keyboard" id="keyboard"></div>
@@ -177,11 +177,10 @@ fetch("words.json")
   WORD_LIST = list.map(w => normalizeTurkish(w.trim()));
   WORD = await getDailyWord();
 
-  // Eğer oyuncu bugün oynamışsa, modal güvenle açılıyor
   if(localStorage.getItem("playedToday")===getDateString()){
     guesses = JSON.parse(localStorage.getItem("guessesToday")||"[]");
     fillBoardWithGuesses();
-    setTimeout(showEndModal, 50);
+    setTimeout(()=>showEndModal(), 50);
   }
 });
 
@@ -266,6 +265,7 @@ function fillBoardWithGuesses(){
     gObj.result.forEach((s,col)=>{
       const cell=document.getElementById(`cell-${row}-${col}`);
       cell.textContent = gObj.letters[col];
+      cell.classList.remove("correct","present","absent");
       if(s==="correct") cell.classList.add("correct");
       else if(s==="present") cell.classList.add("present");
       else cell.classList.add("absent");
@@ -275,19 +275,10 @@ function fillBoardWithGuesses(){
 }
 
 function showEndModal(){
-  let msg="";
-  const won=guesses.some(r=>r.result.every(x=>"correct"===x));
-  if(won){
-    const idx=guesses.findIndex(r=>r.result.every(x=>"correct"===x));
-    const attempt=idx+1;
-    if(attempt===1) msg="Sen tam bir dahiymişsin! 😎";
-    else if(attempt<=3) msg="Eh işte, fena değil! 😏";
-    else if(attempt<=5) msg="Sonunda bildin ama zorladı! 😅";
-    else msg="Zor bir gün oldu ama başardın! 🎉";
-  }else{msg=`Ahh, bugün şansın yaver gitmedi 😬 Kelime: ${WORD}`;}
-  document.getElementById("modalMessage").innerHTML=msg;
-
+  const modal=document.getElementById("resultModal");
   const modalEmojis=document.getElementById("modalEmojis");
+  const modalMessage=document.getElementById("modalMessage");
+
   modalEmojis.innerHTML="";
   guesses.forEach(gObj=>{
     const rowDiv=document.createElement("div");
@@ -299,7 +290,21 @@ function showEndModal(){
     });
     modalEmojis.appendChild(rowDiv);
   });
-  document.getElementById("resultModal").style.display="flex";
+
+  let msg="";
+  const won=guesses.some(r=>r.result.every(x=>"correct"===x));
+  if(won){
+    const idx=guesses.findIndex(r=>r.result.every(x=>"correct"===x));
+    const attempt=idx+1;
+    msg= attempt===1?"Sen tam bir dahiymişsin! 😎":
+         attempt<=3?"Eh işte, fena değil! 😏":
+         attempt<=5?"Sonunda bildin ama zorladı! 😅":"Zor bir gün oldu ama başardın! 🎉";
+  }else{
+    msg=`Ahh, bugün şansın yaver gitmedi 😬 Kelime: ${WORD}`;
+  }
+  modalMessage.innerHTML = msg;
+
+  modal.style.display="flex";
 }
 
 document.getElementById("modalClose").onclick=()=>document.getElementById("resultModal").style.display="none";
