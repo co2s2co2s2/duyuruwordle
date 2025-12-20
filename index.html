@@ -136,7 +136,7 @@ body {
 
 <body>
 
-<h1>Duyuru Wordle 0.641</h1>
+<h1>Duyuru Wordle 0.642</h1>
 
 <div class="board-wrapper">
   <div class="board" id="board"></div>
@@ -300,6 +300,13 @@ function del(){
   }
 }
 
+function clearCurrentRow(){
+  for(let i=0;i<5;i++){
+    document.getElementById(`cell-${currentRow}-${i}`).textContent="";
+  }
+  currentCol = 0;
+}
+
 function submit(){
   if(currentCol<5) return;
 
@@ -309,6 +316,7 @@ function submit(){
 
   if(!WORD_LIST.includes(g)){
     alert("Geçersiz kelime");
+    clearCurrentRow();
     return;
   }
 
