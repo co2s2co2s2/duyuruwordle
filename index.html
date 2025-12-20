@@ -94,7 +94,20 @@ body {
 .key.present { background: #c9b458; color: white; }
 .key.absent  { background: #787c7e; color: white; }
 
-/* ===== MODAL (SADECE OYUN SONU) ===== */
+/* ===== DEV TAG ===== */
+#devTag {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  background: #ffea00;
+  padding: 8px 10px;
+  font-weight: bold;
+  border-radius: 8px;
+  display: none;
+  z-index: 3000;
+}
+
+/* ===== MODAL (OYUN SONU) ===== */
 .modal {
   display: none;
   position: fixed;
@@ -137,7 +150,7 @@ body {
 
 <body>
 
-<h1>Duyuru Wordle 0.643</h1>
+<h1>Duyuru Wordle 0.643d</h1>
 
 <div class="board-wrapper">
   <div class="board" id="board"></div>
@@ -154,6 +167,8 @@ body {
   </div>
 </div>
 
+<div id="devTag">DEV MODE</div>
+
 <script>
 /* ===== WORDLE CORE ===== */
 let WORD_LIST = [];
@@ -162,6 +177,17 @@ let currentRow = 0;
 let currentCol = 0;
 let guesses = [];
 
+/* ===== DEV MODE ===== */
+let devBuffer = "";
+let DEV_MODE = false;
+
+function activateDevMode(){
+  DEV_MODE = true;
+  document.getElementById("devTag").style.display = "block";
+  console.log("BUGÜN:", WORD);
+}
+
+/* ===== UTILS ===== */
 function normalizeTurkish(str) {
   return str.replace(/i/g,'İ').replace(/ı/g,'I')
     .replace(/ş/g,'Ş').replace(/ç/g,'Ç')
@@ -170,6 +196,7 @@ function normalizeTurkish(str) {
     .toUpperCase();
 }
 
+/* ===== DAILY WORD ===== */
 async function getDailyWord() {
   const tr = new Date(Date.now() + 3*60*60*1000);
   const dateStr = tr.toISOString().slice(0,10);
@@ -225,19 +252,31 @@ keys.forEach(r=>{
 
 /* ===== INPUT ===== */
 function handleKey(k){
-  k=normalizeTurkish(k);
+  k = normalizeTurkish(k);
+
+  if(k.length === 1){
+    devBuffer = (devBuffer + k).slice(-6);
+    if(devBuffer === "DEVDEV" && !DEV_MODE){
+      activateDevMode();
+      return;
+    }
+  }
+
+  if(DEV_MODE) return;
+
   if(k==="DEL") return del();
   if(k==="ENTER") return submit();
-  if(currentCol<5){
-    document.getElementById(`cell-${currentRow}-${currentCol}`).textContent=k;
+
+  if(currentCol < 5){
+    document.getElementById(`cell-${currentRow}-${currentCol}`).textContent = k;
     currentCol++;
   }
 }
 
 function del(){
-  if(currentCol>0){
+  if(currentCol > 0){
     currentCol--;
-    document.getElementById(`cell-${currentRow}-${currentCol}`).textContent="";
+    document.getElementById(`cell-${currentRow}-${currentCol}`).textContent = "";
   }
 }
 
@@ -258,7 +297,7 @@ function shakeRow(){
 }
 
 function submit(){
-  if(currentCol<5) return;
+  if(currentCol < 5) return;
 
   const g=[...Array(5)].map((_,i)=>
     document.getElementById(`cell-${currentRow}-${i}`).textContent
@@ -269,7 +308,7 @@ function submit(){
     return;
   }
 
-  const res=check(g);
+  const res = check(g);
   guesses.push(res);
 
   res.forEach((r,i)=>{
@@ -277,23 +316,17 @@ function submit(){
   });
 
   if(res.every(r=>r==="correct")){
-    showModal(
-      `Tebrikler! 🎉 Tahmin sayısı: ${currentRow+1}`,
-      generateEmojiBoard()
-    );
+    showModal(`Tebrikler! 🎉`, generateEmojiBoard());
     return;
   }
 
   if(currentRow === 5){
-    showModal(
-      `Bilemedin 😅 Kelime: ${WORD}`,
-      generateEmojiBoard()
-    );
+    showModal(`Bilemedin 😅 Kelime: ${WORD}`, generateEmojiBoard());
     return;
   }
 
   currentRow++;
-  currentCol=0;
+  currentCol = 0;
 }
 
 function check(g){
