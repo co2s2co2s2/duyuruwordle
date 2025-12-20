@@ -1,10 +1,10 @@
-<!-- index.html v0.658 -->
+<!-- index.html v0.659 -->
 <!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Duyuru Wordle 0.658</title>
+<title>Duyuru Wordle 0.659</title>
 <style>
 body { font-family: Arial, sans-serif; background:#fafafa; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; flex-direction:column; }
 .board { display:grid; grid-template-rows:repeat(6,1fr); gap:10px; justify-items:center; }
@@ -12,37 +12,58 @@ body { font-family: Arial, sans-serif; background:#fafafa; display:flex; justify
 .cell { width:60px; height:60px; border:2px solid #ccc; display:flex; justify-content:center; align-items:center; font-size:32px; font-weight:bold; background:white; }
 @keyframes shake {0%{transform:translateX(0);}20%{transform:translateX(-6px);}40%{transform:translateX(6px);}60%{transform:translateX(-6px);}80%{transform:translateX(6px);}100%{transform:translateX(0);}}
 .row.shake { animation:shake 0.4s; }
-.correct { background:#6aaa64; color:white; } .present { background:#c9b458; color:white; } .absent { background:#787c7e; color:white; }
-.keyboard { margin-top:20px; text-align:center; max-width:480px; } .keyboard div { display:flex; justify-content:center; margin-bottom:5px; }
+.correct { background:#6aaa64; color:white; } 
+.present { background:#c9b458; color:white; } 
+.absent { background:#787c7e; color:white; }
+.keyboard { margin-top:20px; text-align:center; max-width:480px; } 
+.keyboard div { display:flex; justify-content:center; margin-bottom:5px; }
 .key { padding:10px; margin:2px; min-width:32px; max-width:48px; font-weight:bold; border-radius:4px; border:none; background:#ddd; cursor:pointer; }
-.key.correct { background:#6aaa64; color:white; } .key.present { background:#c9b458; color:white; } .key.absent { background:#787c7e; color:white; }
+.key.correct { background:#6aaa64; color:white; } 
+.key.present { background:#c9b458; color:white; } 
+.key.absent { background:#787c7e; color:white; }
 .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; }
 .modal-content { background:white; padding:20px; border-radius:8px; text-align:center; max-width:400px; width:90%; position:relative; }
 #modalClose { position:absolute; top:8px; right:12px; font-size:22px; cursor:pointer; }
 #copyButton { margin-top:12px; padding:8px 16px; background:#6aaa64; color:white; border:none; border-radius:4px; cursor:pointer; }
+#modalShare { margin-top:10px; font-size:14px; }
+#modalShare a { color:#1a73e8; text-decoration:none; word-break:break-all; }
 </style>
 </head>
 <body>
-<h1>Duyuru Wordle 0.658</h1>
+
+<h1>Duyuru Wordle 0.659</h1>
+
 <div class="board" id="board"></div>
 <div class="keyboard" id="keyboard"></div>
+
 <div id="resultModal" class="modal">
   <div class="modal-content">
     <span id="modalClose">&times;</span>
     <div id="modalMessage"></div>
     <pre id="modalEmojis"></pre>
+    <div id="modalShare"></div>
     <button id="copyButton">Kopyala</button>
   </div>
 </div>
+
 <script>
 let DEV_MODE=false;
 window.devOn=()=>{DEV_MODE=true; console.warn("DEV MODE AKTİF"); console.log("BUGÜNÜN KELİMESİ:", WORD);};
 window.devOff=()=>{DEV_MODE=false; console.warn("DEV MODE KAPATILDI");};
 
-let WORD_LIST=[], WORD=null, currentRow=0, currentCol=0, guesses=[];
+const SHARE_LINK = "https://co2s2co2s2.github.io/duyuruwordle/";
+const SHARE_TEXT = "Sen de oynamak istersen buraya gel 👉 ";
+
+let WORD_LIST=[], WORD=null, currentRow=0, currentCol=0, guesses=[], guessesWords=[];
 
 // --- UTILS ---
-function normalizeTurkish(str){return str.replace(/i/g,'İ').replace(/ı/g,'I').replace(/ş/g,'Ş').replace(/ç/g,'Ç').replace(/ü/g,'Ü').replace(/ö/g,'Ö').replace(/ğ/g,'Ğ').toUpperCase();}
+function normalizeTurkish(str){
+  return str.replace(/i/g,'İ').replace(/ı/g,'I')
+            .replace(/ş/g,'Ş').replace(/ç/g,'Ç')
+            .replace(/ü/g,'Ü').replace(/ö/g,'Ö')
+            .replace(/ğ/g,'Ğ').toUpperCase();
+}
+
 async function getDailyWord(){
   const tr=new Date(Date.now()+3*60*60*1000);
   const dateStr=tr.toISOString().slice(0,10);
@@ -67,13 +88,22 @@ fetch("words.json").then(r=>r.json()).then(async list=>{
 const board=document.getElementById("board");
 for(let r=0;r<6;r++){
   const row=document.createElement("div"); row.className="row"; row.id=`row-${r}`;
-  for(let c=0;c<5;c++){ const cell=document.createElement("div"); cell.className="cell"; cell.id=`cell-${r}-${c}`; row.appendChild(cell); }
+  for(let c=0;c<5;c++){
+    const cell=document.createElement("div");
+    cell.className="cell"; cell.id=`cell-${r}-${c}`;
+    row.appendChild(cell);
+  }
   board.appendChild(row);
 }
 
 // --- KEYBOARD ---
-const keys=[["Q","W","E","R","T","Y","U","I","O","P","Ğ","Ü"],["A","S","D","F","G","H","J","K","L","Ş","İ"],["ENTER","Z","X","C","V","B","N","M","Ö","Ç","DEL"]];
+const keys=[
+ ["Q","W","E","R","T","Y","U","I","O","P","Ğ","Ü"],
+ ["A","S","D","F","G","H","J","K","L","Ş","İ"],
+ ["ENTER","Z","X","C","V","B","N","M","Ö","Ç","DEL"]
+];
 const keyboard=document.getElementById("keyboard");
+
 function renderKeyboard(){
   keyboard.innerHTML='';
   keys.forEach(r=>{
@@ -87,11 +117,7 @@ function renderKeyboard(){
     });
     keyboard.appendChild(d);
   });
-  // klavyeyi tahmin durumuna göre güncelle
-  guesses.forEach((res,i)=>{
-    const g = guessesWords[i];
-    updateKeyboard(g,res);
-  });
+  guesses.forEach((res,i)=>updateKeyboard(guessesWords[i],res));
 }
 
 // --- INPUT ---
@@ -105,57 +131,111 @@ function handleKey(k){
   }
 }
 
-function del(){ if(currentCol>0){ currentCol--; document.getElementById(`cell-${currentRow}-${currentCol}`).textContent=""; } }
-function clearCurrentRow(){ for(let i=0;i<5;i++){ document.getElementById(`cell-${currentRow}-${i}`).textContent=""; } currentCol=0; }
-function shakeRow(){ const row=document.getElementById(`row-${currentRow}`); row.classList.add("shake"); setTimeout(()=>{ row.classList.remove("shake"); clearCurrentRow(); },400); }
+function del(){
+  if(currentCol>0){
+    currentCol--;
+    document.getElementById(`cell-${currentRow}-${currentCol}`).textContent="";
+  }
+}
 
-let guessesWords = []; // tahmin edilen kelimeler
+function clearCurrentRow(){
+  for(let i=0;i<5;i++)
+    document.getElementById(`cell-${currentRow}-${i}`).textContent="";
+  currentCol=0;
+}
+
+function shakeRow(){
+  const row=document.getElementById(`row-${currentRow}`);
+  row.classList.add("shake");
+  setTimeout(()=>{ row.classList.remove("shake"); clearCurrentRow(); },400);
+}
+
 function submit(){
   if(currentCol<5) return;
   const g=[...Array(5)].map((_,i)=>document.getElementById(`cell-${currentRow}-${i}`).textContent).join("");
   if(!WORD_LIST.includes(g)){ shakeRow(); return; }
+
   const res=check(g);
   guesses.push(res); guessesWords.push(g);
+
   res.forEach((r,i)=>document.getElementById(`cell-${currentRow}-${i}`).classList.add(r));
   updateKeyboard(g,res);
   saveToStorage();
-  if(res.every(r=>r==="correct")){ showModal(getFunnyMessage(guesses.length,true), generateEmojiBoard()); return; }
-  if(currentRow===5){ showModal(getFunnyMessage(guesses.length,false), generateEmojiBoard()); return; }
+
+  if(res.every(r=>r==="correct")){
+    showModal(getFunnyMessage(guesses.length,true), generateEmojiBoard());
+    return;
+  }
+  if(currentRow===5){
+    showModal(getFunnyMessage(guesses.length,false), generateEmojiBoard());
+    return;
+  }
   currentRow++; currentCol=0;
 }
 
 // --- CHECK ---
-function check(g){ const res=Array(5).fill("absent"); const t=WORD.split(""); g=g.split(""); for(let i=0;i<5;i++) if(g[i]===t[i]){ res[i]="correct"; t[i]=null; } for(let i=0;i<5;i++) if(res[i]!=="correct" && t.includes(g[i])){ res[i]="present"; t[t.indexOf(g[i])]=null; } return res; }
+function check(g){
+  const res=Array(5).fill("absent");
+  const t=WORD.split(""); g=g.split("");
+  for(let i=0;i<5;i++)
+    if(g[i]===t[i]){ res[i]="correct"; t[i]=null; }
+  for(let i=0;i<5;i++)
+    if(res[i]!=="correct" && t.includes(g[i])){
+      res[i]="present"; t[t.indexOf(g[i])]=null;
+    }
+  return res;
+}
 
 // --- KEYBOARD UPDATE ---
 function updateKeyboard(g,res){
   for(let i=0;i<5;i++){
-    const key=g[i];
-    const btn=Array.from(document.getElementsByClassName("key")).find(b=>b.textContent===key);
+    const btn=[...document.getElementsByClassName("key")].find(b=>b.textContent===g[i]);
     if(!btn) continue;
-    if(res[i]==="correct") btn.classList.remove("present","absent"), btn.classList.add("correct");
-    else if(res[i]==="present" && !btn.classList.contains("correct")) btn.classList.remove("absent"), btn.classList.add("present");
-    else if(res[i]==="absent" && !btn.classList.contains("correct") && !btn.classList.contains("present")) btn.classList.add("absent");
+    if(res[i]==="correct") btn.className="key correct";
+    else if(res[i]==="present" && !btn.classList.contains("correct")) btn.className="key present";
+    else if(res[i]==="absent" && !btn.classList.contains("correct") && !btn.classList.contains("present")) btn.className="key absent";
   }
 }
 
 // --- MODAL ---
 function getFunnyMessage(guessCount,success){
   if(success){
-    const messages=["Vay be, süper zekâ! 😎💥","Harika! İyi iş çıkardın 😏","Fena değil, sonunda çözdün 😄","Hmm, biraz uğraştın ama başardın 😅","Ufff, zorlandın ama çözdün 😬","Aaah, sonunda, iyi kötü 😅"];
-    return messages[Math.min(guessCount-1,messages.length-1)];
-  } else { return `Bu sefer olmadı 😭 Kelime: ${WORD}`; }
+    const m=[
+      "Vay be, süper zekâ! 😎💥",
+      "Harika! İyi iş çıkardın 😏",
+      "Fena değil, sonunda çözdün 😄",
+      "Hmm, biraz uğraştın ama başardın 😅",
+      "Ufff, zorlandın ama çözdün 😬",
+      "Aaah, sonunda, iyi kötü 😅"
+    ];
+    return m[Math.min(guessCount-1,m.length-1)];
+  }
+  return `Bu sefer olmadı 😭 Kelime: ${WORD}`;
 }
 
-function showModal(message,emojis=""){ document.getElementById("modalMessage").textContent=message; document.getElementById("modalEmojis").textContent=emojis; document.getElementById("resultModal").style.display="flex"; }
-document.getElementById("modalClose").onclick=()=>document.getElementById("resultModal").style.display="none";
-document.getElementById("copyButton").onclick=()=>{
-  const text=`${document.getElementById("modalMessage").textContent}\n${document.getElementById("modalEmojis").textContent}`;
-  navigator.clipboard.writeText(text);
+function showModal(message,emojis=""){
+  document.getElementById("modalMessage").textContent=message;
+  document.getElementById("modalEmojis").textContent=emojis;
+  document.getElementById("modalShare").innerHTML =
+    `${SHARE_TEXT}<a href="${SHARE_LINK}" target="_blank">${SHARE_LINK}</a>`;
+  document.getElementById("resultModal").style.display="flex";
 }
+
+document.getElementById("modalClose").onclick=()=>document.getElementById("resultModal").style.display="none";
+
+document.getElementById("copyButton").onclick=()=>{
+  const text =
+`${document.getElementById("modalMessage").textContent}
+${document.getElementById("modalEmojis").textContent}
+
+${SHARE_TEXT}${SHARE_LINK}`;
+  navigator.clipboard.writeText(text);
+};
 
 // --- EMOJI BOARD ---
-function generateEmojiBoard(){ return guesses.map(r=>r.map(s=>s==="correct"?"🟩":s==="present"?"🟨":"⬛").join("")).join("\n"); }
+function generateEmojiBoard(){
+  return guesses.map(r=>r.map(s=>s==="correct"?"🟩":s==="present"?"🟨":"⬛").join("")).join("\n");
+}
 
 // --- LOCAL STORAGE ---
 function saveToStorage(){
@@ -166,22 +246,20 @@ function saveToStorage(){
 }
 
 function loadFromStorage(){
-  const storedWord = localStorage.getItem("dw_word");
-  if(storedWord && WORD_LIST.includes(storedWord)) WORD=storedWord;
-  const g=JSON.parse(localStorage.getItem("dw_guesses")||"[]");
-  const gw=JSON.parse(localStorage.getItem("dw_guessesWords")||"[]");
-  const cr=parseInt(localStorage.getItem("dw_currentRow")||"0");
-  guesses=g; guessesWords=gw; currentRow=cr;
+  const w=localStorage.getItem("dw_word");
+  if(w && WORD_LIST.includes(w)) WORD=w;
+  guesses=JSON.parse(localStorage.getItem("dw_guesses")||"[]");
+  guessesWords=JSON.parse(localStorage.getItem("dw_guessesWords")||"[]");
+  currentRow=parseInt(localStorage.getItem("dw_currentRow")||"0");
 }
 
-// --- RENDER FROM STORAGE ---
+// --- RENDER ---
 function renderBoard(){
-  guesses.forEach((res,rowIdx)=>{
-    const g = guessesWords[rowIdx];
+  guesses.forEach((res,r)=>{
+    const g=guessesWords[r];
     for(let i=0;i<5;i++){
-      const cell=document.getElementById(`cell-${rowIdx}-${i}`);
-      cell.textContent = g[i];
-      cell.classList.add(res[i]);
+      const c=document.getElementById(`cell-${r}-${i}`);
+      c.textContent=g[i]; c.classList.add(res[i]);
     }
   });
 }
@@ -191,9 +269,8 @@ function isGameFinished(){
 }
 
 function openModalForFinishedGame(){
-  const lastRes = guesses[guesses.length-1];
-  const success = lastRes.every(c=>c==="correct");
-  showModal(getFunnyMessage(guesses.length,success), generateEmojiBoard());
+  const last=guesses[guesses.length-1];
+  showModal(getFunnyMessage(guesses.length,last.every(c=>c==="correct")), generateEmojiBoard());
 }
 </script>
 </body>
