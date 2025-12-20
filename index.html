@@ -17,46 +17,17 @@ body {
   flex-direction: column;
 }
 
-/* ===== BOARD & EFFECT LAYER ===== */
+/* ===== BOARD ===== */
 .board-wrapper {
   position: relative;
   display: inline-block;
 }
 
-.heart-layer {
-  position: fixed;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 5;
-}
-
-.heart, .confetti {
-  position: absolute;
-  bottom: -30px;
-  animation: floatUp linear forwards;
-  opacity: 0.85;
-}
-
-.confetti {
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-}
-
-@keyframes floatUp {
-  from { transform: translateY(0) scale(0.8); opacity: 0.9; }
-  to   { transform: translateY(-120vh) scale(1.4); opacity: 0; }
-}
-
-/* ===== BOARD ===== */
 .board {
   display: grid;
   grid-template-rows: repeat(6, 1fr);
   gap: 10px;
   justify-items: center;
-  position: relative;
-  z-index: 1;
 }
 
 .row {
@@ -82,8 +53,16 @@ body {
 .absent  { background: #787c7e; color: white; }
 
 /* ===== KEYBOARD ===== */
-.keyboard { margin-top: 20px; text-align: center; max-width: 480px; }
-.keyboard div { display: flex; justify-content: center; margin-bottom: 5px; }
+.keyboard {
+  margin-top: 20px;
+  text-align: center;
+  max-width: 480px;
+}
+.keyboard div {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 5px;
+}
 
 .key {
   padding: 10px;
@@ -157,9 +136,7 @@ body {
 
 <body>
 
-<h1>Duyuru Wordle 0.64</h1>
-
-<div class="heart-layer" id="heartLayer"></div>
+<h1>Duyuru Wordle 0.641</h1>
 
 <div class="board-wrapper">
   <div class="board" id="board"></div>
@@ -181,64 +158,14 @@ body {
 <script>
 /* ================= DEV MODE ================= */
 const DEV_MODE = localStorage.getItem("duyuruDevMode") === "true";
-window.enableDevMode = () => { localStorage.setItem("duyuruDevMode","true"); location.reload(); };
-window.disableDevMode = () => { localStorage.removeItem("duyuruDevMode"); location.reload(); };
-
-/* ================= HEART ENGINE ================= */
-let heartLevel = 1;
-let heartTimer = null;
-
-function startHearts() {
-  stopHearts();
-  const layer = document.getElementById("heartLayer");
-  heartTimer = setInterval(() => {
-    for (let i = 0; i < heartLevel; i++) {
-      const h = document.createElement("div");
-      h.className = "heart";
-      h.textContent = "💗";
-      h.style.left = Math.random() * 100 + "%";
-      h.style.fontSize = 14 + Math.random() * 18 + "px";
-      h.style.animationDuration = Math.max(3, 8 - heartLevel * 0.6) + "s";
-      layer.appendChild(h);
-      setTimeout(() => h.remove(), 9000);
-    }
-  }, Math.max(250, 1200 - heartLevel * 150));
-}
-
-function brokenHearts(countMultiplier=1) {
-  const layer = document.getElementById("heartLayer");
-  const total = heartLevel * 2 * countMultiplier;
-  for (let i = 0; i < total; i++) {
-    const h = document.createElement("div");
-    h.className = "heart";
-    h.textContent = "💔";
-    h.style.left = Math.random() * 100 + "%";
-    h.style.fontSize = 18 + Math.random() * 18 + "px";
-    h.style.animationDuration = "5s";
-    layer.appendChild(h);
-    setTimeout(() => h.remove(), 6000);
-  }
-}
-
-function confetti() {
-  const colors = ["#ff5c8a","#ffd166","#6aaa64","#4cc9f0"];
-  const layer = document.getElementById("heartLayer");
-  for (let i = 0; i < 30; i++) {
-    const c = document.createElement("div");
-    c.className = "confetti";
-    c.style.left = Math.random() * 100 + "%";
-    c.style.background = colors[Math.floor(Math.random()*colors.length)];
-    c.style.animationDuration = "4s";
-    layer.appendChild(c);
-    setTimeout(() => c.remove(), 5000);
-  }
-}
-
-function stopHearts() {
-  clearInterval(heartTimer);
-  heartTimer = null;
-  document.getElementById("heartLayer").innerHTML = "";
-}
+window.enableDevMode = () => {
+  localStorage.setItem("duyuruDevMode","true");
+  location.reload();
+};
+window.disableDevMode = () => {
+  localStorage.removeItem("duyuruDevMode");
+  location.reload();
+};
 
 /* ================= WORDLE CORE ================= */
 let WORD_LIST = [];
@@ -251,7 +178,8 @@ function normalizeTurkish(str) {
   return str.replace(/i/g,'İ').replace(/ı/g,'I')
     .replace(/ş/g,'Ş').replace(/ç/g,'Ç')
     .replace(/ü/g,'Ü').replace(/ö/g,'Ö')
-    .replace(/ğ/g,'Ğ').toUpperCase();
+    .replace(/ğ/g,'Ğ')
+    .toUpperCase();
 }
 
 async function getDailyWord() {
@@ -290,9 +218,11 @@ for (let r=0;r<6;r++){
 }
 
 /* ===== KEYBOARD ===== */
-const keys=[["Q","W","E","R","T","Y","U","I","O","P","Ğ","Ü"],
+const keys=[
+["Q","W","E","R","T","Y","U","I","O","P","Ğ","Ü"],
 ["A","S","D","F","G","H","J","K","L","Ş","İ"],
-["ENTER","Z","X","C","V","B","N","M","Ö","Ç","DEL"]];
+["ENTER","Z","X","C","V","B","N","M","Ö","Ç","DEL"]
+];
 
 const keyboard=document.getElementById("keyboard");
 keys.forEach(r=>{
@@ -312,9 +242,8 @@ function updateKeyboardColor(letter, status) {
   document.querySelectorAll(".key").forEach(k => {
     if (k.textContent === letter) {
       if (k.classList.contains("correct")) return;
-
       if (status === "correct") {
-        k.classList.remove("present", "absent");
+        k.classList.remove("present","absent");
         k.classList.add("correct");
       } else if (status === "present") {
         if (!k.classList.contains("absent"))
@@ -329,10 +258,9 @@ function updateKeyboardColor(letter, status) {
 
 /* ===== MODAL ===== */
 function showModal(message, emojis="") {
-  const modal = document.getElementById("resultModal");
   document.getElementById("modalMessage").textContent = message;
   document.getElementById("modalEmojis").textContent = emojis;
-  modal.style.display = "flex";
+  document.getElementById("resultModal").style.display = "flex";
 }
 
 function hideModal() {
@@ -341,7 +269,9 @@ function hideModal() {
 
 document.getElementById("modalClose").onclick = hideModal;
 document.getElementById("copyButton").onclick = ()=>{
-  navigator.clipboard.writeText(document.getElementById("modalEmojis").textContent);
+  navigator.clipboard.writeText(
+    document.getElementById("modalEmojis").textContent
+  );
 };
 
 /* ===== INIT ===== */
@@ -350,7 +280,6 @@ function init(){
     devTag.style.display="block";
     devTag.onclick=disableDevMode;
   }
-  startHearts();
 }
 
 /* ===== INPUT ===== */
@@ -373,8 +302,15 @@ function del(){
 
 function submit(){
   if(currentCol<5) return;
-  const g=[...Array(5)].map((_,i)=>document.getElementById(`cell-${currentRow}-${i}`).textContent).join("");
-  if(!WORD_LIST.includes(g)){ alert("Geçersiz kelime"); return; }
+
+  const g=[...Array(5)].map((_,i)=>
+    document.getElementById(`cell-${currentRow}-${i}`).textContent
+  ).join("");
+
+  if(!WORD_LIST.includes(g)){
+    alert("Geçersiz kelime");
+    return;
+  }
 
   const res=check(g);
   guesses.push(res);
@@ -384,48 +320,52 @@ function submit(){
     updateKeyboardColor(g[i], r);
   });
 
-  heartLevel++;
-
   if(res.every(r=>r==="correct")){
-    confetti();
     const messages = [
       "Süper! Kelimeyi çözdün 🎉",
       "Bravo! Sen gerçek bir Wordle ustasısın 😎",
-      "Tebrikler! Harfleri harika kullandın ❤️"
+      "Tebrikler! Harfleri harika kullandın"
     ];
-    const msg = messages[Math.floor(Math.random()*messages.length)];
-    showModal(`${msg}\nTahmin sayısı: ${currentRow+1}`, generateEmojiBoard());
-    return;
-  } 
-
-  if(currentRow === 5){
-    brokenHearts(1);
-    const messages = [
-      `Bilemedin 😅 Kelime: ${WORD}`,
-      `Hmm… Bu sefer olmadı 🤔 Kelime: ${WORD}`,
-      `Maalesef! Doğru kelime: ${WORD} 😬`,
-      `Bu kelime seni yendi 😅 Kelime: ${WORD}`
-    ];
-    const msg = messages[Math.floor(Math.random()*messages.length)];
-    showModal(msg, generateEmojiBoard());
+    showModal(
+      `${messages[Math.floor(Math.random()*messages.length)]}
+Tahmin sayısı: ${currentRow+1}`,
+      generateEmojiBoard()
+    );
     return;
   }
 
-  // Yanlış tahmin sonrası kırık kalpler
-  brokenHearts(1);
+  if(currentRow === 5){
+    const messages = [
+      `Bilemedin 😅 Kelime: ${WORD}`,
+      `Hmm… Bu sefer olmadı 🤔 Kelime: ${WORD}`,
+      `Maalesef! Doğru kelime: ${WORD}`,
+      `Bu kelime seni yendi 😅 Kelime: ${WORD}`
+    ];
+    showModal(
+      messages[Math.floor(Math.random()*messages.length)],
+      generateEmojiBoard()
+    );
+    return;
+  }
 
-  currentRow++; currentCol=0;
+  currentRow++;
+  currentCol=0;
 }
 
 function check(g){
   const res=Array(5).fill("absent");
   const t=WORD.split("");
   g=g.split("");
+
   for(let i=0;i<5;i++){
-    if(g[i]===t[i]){res[i]="correct";t[i]=null;}
+    if(g[i]===t[i]){
+      res[i]="correct";
+      t[i]=null;
+    }
   }
+
   for(let i=0;i<5;i++){
-    if(res[i]!=="correct"&&t.includes(g[i])){
+    if(res[i]!=="correct" && t.includes(g[i])){
       res[i]="present";
       t[t.indexOf(g[i])]=null;
     }
@@ -435,13 +375,12 @@ function check(g){
 
 /* ===== EMOJI BOARD ===== */
 function generateEmojiBoard(){
-  return guesses.map(r=>{
-    return r.map(s=>{
-      if(s==="correct") return "🟩";
-      if(s==="present") return "🟨";
-      return "⬛";
-    }).join("");
-  }).join("\n");
+  return guesses.map(r =>
+    r.map(s =>
+      s==="correct" ? "🟩" :
+      s==="present" ? "🟨" : "⬛"
+    ).join("")
+  ).join("\n");
 }
 </script>
 </body>
