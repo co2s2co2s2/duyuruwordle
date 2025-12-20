@@ -131,7 +131,7 @@ body {
 
 <body>
 
-<h1>Duyuru Wordle 0.643</h1>
+<h1>Duyuru Wordle 0.644</h1>
 
 <div class="board" id="board"></div>
 <div class="keyboard" id="keyboard"></div>
@@ -233,9 +233,10 @@ keys.forEach(r=>{
 
 /* ===== INPUT ===== */
 function handleKey(k){
-  if (DEV_MODE) return; // DEV modda klavye kapalı
-
   k = normalizeTurkish(k);
+
+  // Klavyeyi sadece DEV_MODE kapalıyken aktif et
+  if(DEV_MODE) return;
 
   if(k==="DEL") return del();
   if(k==="ENTER") return submit();
