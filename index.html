@@ -1,10 +1,10 @@
-<!-- index.html v0.660 -->
+<!-- index.html v0.661 -->
 <!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Duyuru Wordle 0.660</title>
+<title>Duyuru Wordle 0.661</title>
 <style>
 body { font-family: Arial, sans-serif; background:#fafafa; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; flex-direction:column; }
 .board { display:grid; grid-template-rows:repeat(6,1fr); gap:10px; justify-items:center; }
@@ -31,7 +31,7 @@ body { font-family: Arial, sans-serif; background:#fafafa; display:flex; justify
 </head>
 <body>
 
-<h1>Duyuru Wordle 0.660</h1>
+<h1>Duyuru Wordle 0.661</h1>
 
 <div class="board" id="board"></div>
 <div class="keyboard" id="keyboard"></div>
@@ -54,42 +54,47 @@ window.devOff=()=>{DEV_MODE=false; console.warn("DEV MODE KAPATILDI");};
 const SHARE_LINK = "https://co2s2co2s2.github.io/duyuruwordle/";
 const SHARE_TEXT = "Sen de oynamak istersen buraya gel 👉 ";
 
-let WORD_LIST=[], WORD=null, currentRow=0, currentCol=0, guesses=[], guessesWords=[];
+/* =========================
+   KELİME LİSTESİ (GÖMÜLÜ)
+   ========================= */
+const WORD_LIST = [
+  "TEĞET","MİZAÇ","VİRAJ","EFSUN","GÖĞÜS","EFKAR","FLÖRT","GÜBRE",
+  "DÜŞÜŞ","VAKIF","MESAİ","TİTİZ","GÖVDE","TALEP","LİMAN","FENER",
+  "GAVUR","MÜFTÜ"
+];
 
-// --- UTILS ---
-function normalizeTurkish(str){
-  return str.replace(/i/g,'İ').replace(/ı/g,'I')
-            .replace(/ş/g,'Ş').replace(/ç/g,'Ç')
-            .replace(/ü/g,'Ü').replace(/ö/g,'Ö')
-            .replace(/ğ/g,'Ğ').toUpperCase();
+let WORD=null, currentRow=0, currentCol=0, guesses=[], guessesWords=[];
+
+/* =========================
+   TARİH / GÜNLÜK KELİME
+   ========================= */
+function getTRDateString(){
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone:"Europe/Istanbul",
+    year:"numeric", month:"2-digit", day:"2-digit"
+  }).format(new Date());
 }
 
-// 🔥 KELİME ARTIK HERKES İÇİN TR SAATİYLE 00:00'DA DEĞİŞİR
-async function getDailyWord(){
+function getDailyWord(){
+  const base = new Date("2024-01-01T00:00:00+03:00");
   const now = new Date();
-  const trDate = new Date(
-    now.toLocaleString("en-US", { timeZone: "Europe/Istanbul" })
-  );
-  const dateStr = trDate.toISOString().slice(0,10);
-
-  const data = new TextEncoder().encode(dateStr);
-  const hash = await crypto.subtle.digest("SHA-256", data);
-  const arr = Array.from(new Uint8Array(hash));
-  const idx = arr.reduce((a,v)=> (a*31+v)%WORD_LIST.length,0);
-  return WORD_LIST[idx];
+  const trNow = new Date(now.toLocaleString("en-US",{timeZone:"Europe/Istanbul"}));
+  const dayIndex = Math.floor((trNow - base) / 86400000);
+  return WORD_LIST[dayIndex % WORD_LIST.length];
 }
 
-// --- LOAD WORDS ---
-fetch("words.json").then(r=>r.json()).then(async list=>{
-  WORD_LIST=list.map(w=>normalizeTurkish(w.trim()));
-  WORD=await getDailyWord();
-  loadFromStorage();
-  renderBoard();
-  renderKeyboard();
-  if(isGameFinished()) openModalForFinishedGame();
-});
+/* =========================
+   INIT
+   ========================= */
+WORD = getDailyWord();
+loadFromStorage();
+renderBoard();
+renderKeyboard();
+if(isGameFinished()) openModalForFinishedGame();
 
-// --- BOARD ---
+/* =========================
+   BOARD
+   ========================= */
 const board=document.getElementById("board");
 for(let r=0;r<6;r++){
   const row=document.createElement("div"); row.className="row"; row.id=`row-${r}`;
@@ -101,7 +106,9 @@ for(let r=0;r<6;r++){
   board.appendChild(row);
 }
 
-// --- KEYBOARD ---
+/* =========================
+   KEYBOARD
+   ========================= */
 const keys=[
  ["Q","W","E","R","T","Y","U","I","O","P","Ğ","Ü"],
  ["A","S","D","F","G","H","J","K","L","Ş","İ"],
@@ -125,9 +132,10 @@ function renderKeyboard(){
   guesses.forEach((res,i)=>updateKeyboard(guessesWords[i],res));
 }
 
-// --- INPUT ---
+/* =========================
+   INPUT
+   ========================= */
 function handleKey(k){
-  k=normalizeTurkish(k);
   if(k==="DEL") return del();
   if(k==="ENTER") return submit();
   if(currentCol<5){
@@ -166,18 +174,16 @@ function submit(){
   updateKeyboard(g,res);
   saveToStorage();
 
-  if(res.every(r=>r==="correct")){
-    showModal(getFunnyMessage(guesses.length,true), generateEmojiBoard());
-    return;
-  }
-  if(currentRow===5){
-    showModal(getFunnyMessage(guesses.length,false), generateEmojiBoard());
+  if(res.every(r=>r==="correct") || currentRow===5){
+    showModal(getFunnyMessage(guesses.length,res.every(r=>r==="correct")), generateEmojiBoard());
     return;
   }
   currentRow++; currentCol=0;
 }
 
-// --- CHECK ---
+/* =========================
+   CHECK
+   ========================= */
 function check(g){
   const res=Array(5).fill("absent");
   const t=WORD.split(""); g=g.split("");
@@ -190,18 +196,30 @@ function check(g){
   return res;
 }
 
-// --- KEYBOARD UPDATE ---
-function updateKeyboard(g,res){
-  for(let i=0;i<5;i++){
-    const btn=[...document.getElementsByClassName("key")].find(b=>b.textContent===g[i]);
-    if(!btn) continue;
-    if(res[i]==="correct") btn.className="key correct";
-    else if(res[i]==="present" && !btn.classList.contains("correct")) btn.className="key present";
-    else if(res[i]==="absent" && !btn.classList.contains("correct") && !btn.classList.contains("present")) btn.className="key absent";
-  }
+/* =========================
+   STORAGE (GÜN BAZLI)
+   ========================= */
+function saveToStorage(){
+  localStorage.setItem("dw_date", getTRDateString());
+  localStorage.setItem("dw_guesses",JSON.stringify(guesses));
+  localStorage.setItem("dw_guessesWords",JSON.stringify(guessesWords));
+  localStorage.setItem("dw_currentRow",currentRow);
 }
 
-// --- MODAL ---
+function loadFromStorage(){
+  if(localStorage.getItem("dw_date")!==getTRDateString()){
+    localStorage.clear();
+    localStorage.setItem("dw_date", getTRDateString());
+    return;
+  }
+  guesses=JSON.parse(localStorage.getItem("dw_guesses")||"[]");
+  guessesWords=JSON.parse(localStorage.getItem("dw_guessesWords")||"[]");
+  currentRow=parseInt(localStorage.getItem("dw_currentRow")||"0");
+}
+
+/* =========================
+   MODAL / EMOJI
+   ========================= */
 function getFunnyMessage(guessCount,success){
   if(success){
     const m=[
@@ -209,15 +227,14 @@ function getFunnyMessage(guessCount,success){
       "Harika! İyi iş çıkardın 😏",
       "Fena değil, sonunda çözdün 😄",
       "Hmm, biraz uğraştın ama başardın 😅",
-      "Ufff, zorlandın ama çözdün 😬",
-      "Aaah, sonunda, iyi kötü 😅"
+      "Ufff, zorlandın ama çözdün 😬"
     ];
     return m[Math.min(guessCount-1,m.length-1)];
   }
   return `Bu sefer olmadı 😭 Kelime: ${WORD}`;
 }
 
-function showModal(message,emojis=""){
+function showModal(message,emojis){
   document.getElementById("modalMessage").textContent=message;
   document.getElementById("modalEmojis").textContent=emojis;
   document.getElementById("modalShare").innerHTML =
@@ -225,47 +242,8 @@ function showModal(message,emojis=""){
   document.getElementById("resultModal").style.display="flex";
 }
 
-document.getElementById("modalClose").onclick=()=>document.getElementById("resultModal").style.display="none";
-
-document.getElementById("copyButton").onclick=()=>{
-  const text =
-`${document.getElementById("modalMessage").textContent}
-${document.getElementById("modalEmojis").textContent}
-
-${SHARE_TEXT}${SHARE_LINK}`;
-  navigator.clipboard.writeText(text);
-};
-
-// --- EMOJI BOARD ---
 function generateEmojiBoard(){
   return guesses.map(r=>r.map(s=>s==="correct"?"🟩":s==="present"?"🟨":"⬛").join("")).join("\n");
-}
-
-// --- LOCAL STORAGE ---
-function saveToStorage(){
-  localStorage.setItem("dw_guesses",JSON.stringify(guesses));
-  localStorage.setItem("dw_guessesWords",JSON.stringify(guessesWords));
-  localStorage.setItem("dw_currentRow",currentRow);
-  localStorage.setItem("dw_word",WORD);
-}
-
-function loadFromStorage(){
-  const w=localStorage.getItem("dw_word");
-  if(w && WORD_LIST.includes(w)) WORD=w;
-  guesses=JSON.parse(localStorage.getItem("dw_guesses")||"[]");
-  guessesWords=JSON.parse(localStorage.getItem("dw_guessesWords")||"[]");
-  currentRow=parseInt(localStorage.getItem("dw_currentRow")||"0");
-}
-
-// --- RENDER ---
-function renderBoard(){
-  guesses.forEach((res,r)=>{
-    const g=guessesWords[r];
-    for(let i=0;i<5;i++){
-      const c=document.getElementById(`cell-${r}-${i}`);
-      c.textContent=g[i]; c.classList.add(res[i]);
-    }
-  });
 }
 
 function isGameFinished(){
